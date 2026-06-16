@@ -436,13 +436,14 @@
     }
     var notices = bySort(entries(DB.notices), function (kv) { return -((kv[1].pinned ? 1e15 : 0) + (kv[1].ts || 0)); });
     if (notices.length) {
-      h += '<h2 class="sec">공지</h2>';
+      h += '<h2 class="sec">공지</h2><div class="list-grid">';
       notices.slice(0, 3).forEach(function (kv) {
         var n = kv[1];
         h += '<div class="card notice' + (n.pinned ? " pin" : "") + '">' + (n.pinned ? '<span class="pin-tag">📌 고정</span>' : "") +
           '<div class="notice-text">' + linkify(esc(n.text)) + "</div>" + (n.link ? '<a class="tl-link" href="' + esc(n.link) + '" target="_blank" rel="noopener">' + icon("link", 13) + " 링크 바로가기</a>" : "") +
           "<div class=\"notice-by\">" + (n.by ? chip(n.by) : "") + '<span class="ago">' + timeago(n.ts) + "</span></div></div>";
       });
+      h += "</div>";
     }
     return h;
   }
@@ -724,7 +725,8 @@
   function prepNotice() {
     var notices = bySort(entries(DB.notices), function (kv) { return -((kv[1].pinned ? 1e15 : 0) + (kv[1].ts || 0)); });
     var h = '<div class="page-head"><h1>공지</h1>' + (isMeAdmin() ? '<button class="btn-pri" data-action="new-notice">+ 추가</button>' : "") + "</div>";
-    if (!notices.length) h += '<div class="empty sm">공지가 없어요.</div>';
+    if (!notices.length) return h + '<div class="empty sm">공지가 없어요.</div>';
+    h += '<div class="list-grid">';
     notices.forEach(function (kv) {
       var n = kv[1];
       var canEditN = (n.by === me || isMeAdmin());
@@ -733,6 +735,7 @@
         '<div class="notice-by">' + (n.by ? chip(n.by) : "") + '<span class="ago">' + timeago(n.ts) + "</span>" +
         (canEditN ? '<span class="notice-acts"><button class="link" data-action="edit-notice" data-id="' + kv[0] + '">' + icon("edit", 14) + " 수정</button><button class=\"cmt-del\" data-action=\"del-notice\" data-id=\"" + kv[0] + '">×</button></span>' : "") + "</div></div>";
     });
+    h += "</div>";
     return h;
   }
   function prepPacking() {
@@ -742,19 +745,27 @@
     var h = '<div class="page-head"><h1>준비물</h1></div>';
     h += '<div class="pk-sec-head"><span class="pk-sub">공용 (담당자가 챙겨요 · 운영진 관리)</span>' + (mgr ? '<button class="btn-ghost sm" data-action="new-packing" data-type="shared">+ 추가</button>' : "") + "</div>";
     if (!shared.length) h += '<div class="empty sm">공용 준비물이 없어요.</div>';
-    shared.forEach(function (kv) {
-      var p = kv[1];
-      h += '<div class="pk-item' + (p.done ? " done" : "") + '"><button class="pk-check' + (mgr ? "" : " ro") + '"' + (mgr ? ' data-action="toggle-pack" data-id="' + kv[0] + '"' : "") + ">" + (p.done ? "✓" : "") + "</button>" +
-        '<div class="pk-label">' + esc(p.label) + (p.assignee ? ' <span class="pk-who">' + chip(p.assignee) + "</span>" : ' <span class="pk-need">담당 미정</span>') + "</div>" +
-        (mgr ? '<button class="tl-del" data-action="del-pack" data-id="' + kv[0] + '">×</button>' : "") + "</div>";
-    });
+    else {
+      h += '<div class="list-grid">';
+      shared.forEach(function (kv) {
+        var p = kv[1];
+        h += '<div class="pk-item' + (p.done ? " done" : "") + '"><button class="pk-check' + (mgr ? "" : " ro") + '"' + (mgr ? ' data-action="toggle-pack" data-id="' + kv[0] + '"' : "") + ">" + (p.done ? "✓" : "") + "</button>" +
+          '<div class="pk-label">' + esc(p.label) + (p.assignee ? ' <span class="pk-who">' + chip(p.assignee) + "</span>" : ' <span class="pk-need">담당 미정</span>') + "</div>" +
+          (mgr ? '<button class="tl-del" data-action="del-pack" data-id="' + kv[0] + '">×</button>' : "") + "</div>";
+      });
+      h += "</div>";
+    }
     h += '<div class="pk-sec-head"><span class="pk-sub">개인 (전원 각자 · 본인 이름 눌러 체크)</span><button class="btn-ghost sm" data-action="new-packing" data-type="personal">+ 추가</button></div>';
     if (!personal.length) h += '<div class="empty sm">개인 준비물이 없어요.</div>';
-    personal.forEach(function (kv) {
-      var p = kv[1], iReady = !!obj(p.ready)[me], cnt = readyCount(p), canDel = (p.by === me || mgr);
-      h += '<div class="pk-item personal"><button class="pk-check ' + (iReady ? "on" : "") + '" data-action="toggle-ready" data-id="' + kv[0] + '">' + (iReady ? "✓" : "") + "</button>" +
-        '<div class="pk-label">' + esc(p.label) + '<span class="pk-prog">' + cnt + "/" + memberCount() + "명 준비완료</span></div>" + (canDel ? '<button class="tl-del" data-action="del-pack" data-id="' + kv[0] + '">×</button>' : "") + "</div>";
-    });
+    else {
+      h += '<div class="list-grid">';
+      personal.forEach(function (kv) {
+        var p = kv[1], iReady = !!obj(p.ready)[me], cnt = readyCount(p), canDel = (p.by === me || mgr);
+        h += '<div class="pk-item personal"><button class="pk-check ' + (iReady ? "on" : "") + '" data-action="toggle-ready" data-id="' + kv[0] + '">' + (iReady ? "✓" : "") + "</button>" +
+          '<div class="pk-label">' + esc(p.label) + '<span class="pk-prog">' + cnt + "/" + memberCount() + "명 준비완료</span></div>" + (canDel ? '<button class="tl-del" data-action="del-pack" data-id="' + kv[0] + '">×</button>' : "") + "</div>";
+      });
+      h += "</div>";
+    }
     return h;
   }
 
