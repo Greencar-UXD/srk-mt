@@ -879,7 +879,14 @@
     if (!booted) { booted = true; if (seedIfEmpty(DB)) return; }
     if (me && DB.members && Object.keys(DB.members).length) {
       var dmme = DB.members[me];
-      if (!dmme || (dmme.token && dmme.token !== MYTOKEN)) { me = null; localStorage.removeItem("srk_me"); intro.step = "name"; intro.pick = null; }
+      if (!dmme || (dmme.token && dmme.token !== MYTOKEN)) {
+        // 명단에서 빠졌거나 다른 기기가 그 이름을 선점함 → 다시 선택
+        me = null; localStorage.removeItem("srk_me"); intro.step = "name"; intro.pick = null;
+      } else if (!dmme.claimed || dmme.token !== MYTOKEN) {
+        // 같은 기기 재방문인데 입장이 풀려 있음(또는 토큰 미설정) → 재선택 없이 자동 재입장
+        Store.update("members/" + me, { claimed: true, token: MYTOKEN });
+        DB.members[me] = Object.assign({}, dmme, { claimed: true, token: MYTOKEN });
+      }
     }
     render();
   });
