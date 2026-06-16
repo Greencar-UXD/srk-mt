@@ -20,6 +20,7 @@
   var booted = false;
   var photoSel = {};      // 선택된 사진 key 맵
   var photoUploading = 0; // 업로드 중인 장수
+  var avatarBusy = false; // 프로필 사진 변경 중
 
   /* ============================================================
      유틸
@@ -47,9 +48,13 @@
   }
   var AV_COLORS = ["#e5302a", "#2fa85a", "#3b6fe0", "#e0489e", "#7c5cfc", "#f59f00", "#119d8d", "#d6336c", "#1f7ae0", "#8338ec", "#f4791f", "#08916a"];
   function avColor(id) { var s = String(id || ""), h = 0; for (var i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) >>> 0; return AV_COLORS[h % AV_COLORS.length]; }
+  function avatarThumb(u, size) { u = String(u || ""); var px = Math.round((size || 28) * 2); return u.indexOf("/upload/") >= 0 ? u.replace("/upload/", "/upload/c_fill,g_auto,w_" + px + ",h_" + px + ",q_auto,f_auto/") : u; }
   function avatar(id, size) {
-    var st = size ? ("width:" + size + "px;height:" + size + "px;font-size:" + Math.round(size * 0.4) + "px;") : "";
-    return '<span class="av" style="' + st + "background:" + avColor(id) + '">' + esc(initials(memberName(id))) + "</span>";
+    size = size || 28;
+    var m = obj(DB.members)[id] || {};
+    var st = "width:" + size + "px;height:" + size + "px;";
+    if (m.photoUrl) return '<span class="av av-img" style="' + st + '"><img loading="lazy" src="' + esc(avatarThumb(m.photoUrl, size)) + '" alt=""></span>';
+    return '<span class="av" style="' + st + "font-size:" + Math.round(size * 0.4) + "px;background:" + avColor(id) + '">' + esc(initials(memberName(id))) + "</span>";
   }
   function chip(id) { return '<span class="mchip">' + avatar(id, 22) + "<span>" + esc(memberName(id)) + "</span></span>"; }
 
@@ -644,7 +649,11 @@
   function formProfile() {
     var m = obj(DB.members)[me] || {};
     var dl = (CFG.stations || []).map(function (s) { return '<option value="' + esc(s.n) + '">'; }).join("");
-    var h = '<h2>내 프로필</h2><div class="profile-who" style="justify-content:flex-start">' + avatar(me, 36) + "<span>" + esc(memberName(me)) + "</span>" + roleBadge(me) + "</div>" +
+    var photoBtns = cloudOn()
+      ? '<button class="btn-ghost sm" data-action="pick-avatar"' + (avatarBusy ? " disabled" : "") + ">" + (avatarBusy ? "변경 중…" : "📷 사진 변경") + "</button>" + (m.photoUrl && !avatarBusy ? ' <button class="link" data-action="remove-avatar">기본 이미지로</button>' : "")
+      : '<div class="pf-note">프로필 사진은 사진 기능(Cloudinary) 연결 후 변경할 수 있어요</div>';
+    var h = '<h2>내 프로필</h2>' +
+      '<div class="pf-photo">' + avatar(me, 72) + '<div class="pf-photo-act"><div class="pf-name">' + esc(memberName(me)) + " " + roleBadge(me) + "</div>" + photoBtns + "</div></div>" +
       '<label>🚇 출발지 (지하철역)</label><input type="text" id="p-station" list="stationlist2" value="' + esc(m.station || "") + '" placeholder="예: 남영"><datalist id="stationlist2">' + dl + "</datalist>" +
       '<label>🚗 자차 보유</label><div class="toggle2"><button id="p-car-no" class="' + (m.hasCar ? "" : "on") + '" data-action="pf-car" data-v="0">없음 🙋</button><button id="p-car-yes" class="' + (m.hasCar ? "on" : "") + '" data-action="pf-car" data-v="1">있음 🚗</button></div>' +
       '<div class="modal-foot"><button class="btn-line" data-action="close-modal">닫기</button><button class="btn-pri" data-action="save-profile">저장</button></div>';
@@ -685,6 +694,8 @@
 
     /* 프로필/멤버 */
     if (a === "open-profile") { formProfile(); return; }
+    if (a === "pick-avatar") { var af = $("#avatar-file"); if (af) af.click(); return; }
+    if (a === "remove-avatar") { Store.remove("members/" + me + "/photoUrl"); if (obj(DB.members)[me]) delete DB.members[me].photoUrl; formProfile(); return; }
     if (a === "pf-car") { var v = t.getAttribute("data-v") === "1"; $("#p-car-yes").classList.toggle("on", v); $("#p-car-no").classList.toggle("on", !v); return; }
     if (a === "save-profile") { var pon = $("#p-car-yes").classList.contains("on"); var upd = { station: cleanStation($("#p-station").value), hasCar: pon }; if (pon) upd.rideWith = null; Store.update("members/" + me, upd); closeModal(); return; }
     if (a === "switch-me") { if (confirm("현재 이름을 비우고 다른 이름으로 입장할까요? (이 이름은 다시 선택 가능해집니다)")) { Store.update("members/" + me, { claimed: false, token: null, rideWith: null }); me = null; localStorage.removeItem("srk_me"); intro.step = "name"; intro.pick = null; closeModal(); renderGate(); } return; }
@@ -816,12 +827,19 @@
   function saveSchedule() { if (!isMeAdmin()) return; var day = $("#f-day").value, time = $("#f-time").value, title = $("#f-title").value.trim(); if (!day || !time || !title) { alert("날짜·시간·내용을 모두 입력하세요"); return; } Store.push("schedule", { day: day, time: time, title: clampStr(title, 100), ts: Date.now() }); closeModal(); }
   function savePacking() { if (!isMeAdmin()) return; var label = $("#f-label").value.trim(); if (!label) return; Store.push("packing", { label: clampStr(label, 80), type: $("#f-type").value, assignee: $("#f-assignee").value || null, done: false, ready: {}, ts: Date.now() }); closeModal(); }
 
-  /* 업로드 전 사진 자동 축소 (브라우저 canvas). 영상·GIF·디코딩 불가 파일은 원본 유지 */
-  function resizeImageFile(file) {
+  /* Cloudinary unsigned 업로드 (이미지·영상) */
+  function clUpload(file) {
+    var c = CFG.cloudinary, fd = new FormData(); fd.append("file", file); fd.append("upload_preset", c.uploadPreset);
+    return fetch("https://api.cloudinary.com/v1_1/" + c.cloudName + "/auto/upload", { method: "POST", body: fd }).then(function (r) { return r.json(); });
+  }
+  /* 업로드 전 사진 자동 축소 (브라우저 canvas). 영상·GIF·디코딩 불가 파일은 원본 유지.
+     overrideMax 주면 그 크기로 강제 축소(프로필 사진용) */
+  function resizeImageFile(file, overrideMax) {
     var m = CFG.media || {};
+    var doResize = overrideMax ? true : m.resizeImages;
     return new Promise(function (resolve) {
-      if (!m.resizeImages || !file || file.type.indexOf("image/") !== 0 || file.type === "image/gif") return resolve(file);
-      var maxDim = m.maxImageDim || 2048, q = m.imageQuality || 0.82;
+      if (!doResize || !file || file.type.indexOf("image/") !== 0 || file.type === "image/gif") return resolve(file);
+      var maxDim = overrideMax || m.maxImageDim || 2048, q = overrideMax ? 0.8 : (m.imageQuality || 0.82);
       var url = URL.createObjectURL(file), img = new Image();
       img.onload = function () {
         URL.revokeObjectURL(url);
@@ -843,17 +861,23 @@
     if (!cloudOn()) { alert("사진 기능을 켜려면 Cloudinary 연결이 필요해요."); return; }
     var arr = Array.prototype.slice.call(files || []).filter(function (f) { return f && f.type && (f.type.indexOf("image/") === 0 || f.type.indexOf("video/") === 0); });
     if (!arr.length) return;
-    var c = CFG.cloudinary, url = "https://api.cloudinary.com/v1_1/" + c.cloudName + "/auto/upload"; // auto = 이미지·영상 모두
     photoUploading += arr.length; if (state.tab === "photo") render();
     arr.forEach(function (f) {
-      resizeImageFile(f).then(function (up) {
-        var fd = new FormData(); fd.append("file", up); fd.append("upload_preset", c.uploadPreset);
-        return fetch(url, { method: "POST", body: fd });
-      }).then(function (r) { return r.json(); }).then(function (j) {
+      resizeImageFile(f).then(clUpload).then(function (j) {
         if (j && j.secure_url) Store.push("photos", { url: j.secure_url, publicId: j.public_id || "", resourceType: j.resource_type || "image", format: j.format || "", w: j.width || 0, h: j.height || 0, name: clampStr(f.name, 80), by: me, ts: Date.now() });
         else alert("업로드 실패: " + ((j && j.error && j.error.message) || "Cloudinary 설정(프리셋이 Unsigned인지, 영상 용량 한도) 확인"));
       }).catch(function () { alert("사진 업로드 중 네트워크 오류가 발생했어요."); }).then(function () { photoUploading = Math.max(0, photoUploading - 1); if (state.tab === "photo") render(); });
     });
+  }
+  /* 프로필 사진 변경 */
+  function uploadAvatar(file) {
+    if (!cloudOn()) { alert("프로필 사진은 사진 기능(Cloudinary) 연결 후 변경할 수 있어요."); return; }
+    if (!file || file.type.indexOf("image/") !== 0) { alert("이미지 파일을 선택하세요."); return; }
+    avatarBusy = true; formProfile();
+    resizeImageFile(file, 512).then(clUpload).then(function (j) {
+      if (j && j.secure_url) { Store.update("members/" + me, { photoUrl: j.secure_url }); DB.members[me] = Object.assign({}, obj(DB.members)[me], { photoUrl: j.secure_url }); }
+      else alert("업로드 실패: " + ((j && j.error && j.error.message) || "Cloudinary 설정 확인"));
+    }).catch(function () { alert("프로필 사진 업로드 오류가 발생했어요."); }).then(function () { avatarBusy = false; formProfile(); });
   }
   function triggerDl(href, name) { var a = document.createElement("a"); a.href = href; a.download = name || "photo"; a.target = "_blank"; a.rel = "noopener"; document.body.appendChild(a); a.click(); a.remove(); }
   function downloadSelected(keys) {
@@ -870,6 +894,7 @@
       .catch(function () { alert("일괄 압축에 실패해 개별로 엽니다."); keys.forEach(function (k) { window.open(attachUrl(DB.photos[k].url), "_blank"); }); });
   }
   (function bindPhotoInput() { var fi = $("#photo-file"); if (fi) fi.addEventListener("change", function () { uploadPhotos(this.files); this.value = ""; }); })();
+  (function bindAvatarInput() { var af = $("#avatar-file"); if (af) af.addEventListener("change", function () { uploadAvatar(this.files && this.files[0]); this.value = ""; }); })();
 
   /* ============================================================
      부팅
