@@ -43,6 +43,8 @@
   function memberName(id) { var m = obj(DB.members)[id]; return m && m.name ? m.name : (id || "?"); }
   function isAdmin(id) { return !!(obj(DB.members)[id] || {}).admin; }
   function isMeAdmin() { return isAdmin(me); }
+  // 4자리 인증번호 해시 (평문 저장 방지용 — 오픈 규칙이라 강력 보안은 아니고 글랜스 방지 수준)
+  function hashPin(p) { p = "srk!" + String(p || ""); var h = 5381; for (var i = 0; i < p.length; i++) h = ((h << 5) + h + p.charCodeAt(i)) >>> 0; return "p" + h.toString(36); }
   function roleBadge(id) { return isAdmin(id) ? '<span class="rbadge admin">운영진</span>' : '<span class="rbadge crew">크루원</span>'; }
   function initials(name) {
     name = String(name || "").trim(); if (!name) return "?";
@@ -123,7 +125,7 @@
       mode: "demo",
       onRoot: function (cb) { subs.push(cb); cb(read()); },
       set: function (p, v) { var o = read(); if (p === "/" || p === "") writeAll(v); else { navSet(o, p, v); writeAll(o); } },
-      update: function (p, v) { var o = read(); var ks = p.replace(/^\/|\/$/g, "").split("/"), cur = o; for (var i = 0; i < ks.length; i++) { if (!cur[ks[i]] || typeof cur[ks[i]] !== "object") cur[ks[i]] = {}; cur = cur[ks[i]]; } Object.keys(obj(v)).forEach(function (k) { if (v[k] === null) delete cur[k]; else cur[k] = v[k]; }); writeAll(o); },
+      update: function (p, v) { var o = read(); Object.keys(obj(v)).forEach(function (k) { navSet(o, p + "/" + k, v[k] === null ? null : v[k]); }); writeAll(o); }, // 키에 '/' 있으면 중첩 경로 (Firebase multi-path update와 동일)
       push: function (p, v) { var o = read(); var k = key(); navSet(o, p + "/" + k, v); writeAll(o); return k; },
       remove: function (p) { var o = read(); navSet(o, p, null); writeAll(o); },
       tx: function (p, fn) { var o = read(); var cur = navGet(o, p); var res = fn(cur === undefined ? null : JSON.parse(JSON.stringify(cur))); if (res === undefined) return Promise.resolve(false); navSet(o, p, res); writeAll(o); return Promise.resolve(true); },
@@ -224,7 +226,7 @@
      ============================================================ */
   function render() {
     var m = me && obj(DB.members)[me];
-    if (!me || !m || !m.claimed || m.token !== MYTOKEN) { renderGate(); return; }
+    if (!me || !m || !m.claimed) { renderGate(); return; }
     $("#gate").classList.add("hidden");
     if (state.tab === "vote") { state.tab = "prep"; state.prep = "vote"; } // 투표는 준비 탭으로 이동됨
     renderHeader(); renderNav();
@@ -255,32 +257,38 @@
   /* ---------- 인트로 (이름 → 출발역 → 자차) ---------- */
   function renderGate() {
     var g = $("#gate"); g.classList.remove("hidden");
-    if (intro.step === "profile" && intro.pick) g.innerHTML = gateProfile();
+    if (intro.step === "pin" && intro.pick) g.innerHTML = gatePin();
+    else if (intro.step === "profile" && intro.pick) g.innerHTML = gateProfile();
     else g.innerHTML = gateName();
-    if (intro.step === "name") {
-      var s = $("#gate-search");
-      if (s) s.oninput = function () {
-        var q = this.value.trim().toLowerCase();
-        Array.prototype.forEach.call($("#gate-grid").children, function (b) { b.style.display = !q || b.textContent.toLowerCase().indexOf(q) >= 0 ? "" : "none"; });
-      };
-    }
+    var pin = $("#i-pin");
+    if (pin) { pin.addEventListener("input", function () { this.value = this.value.replace(/\D/g, "").slice(0, 4); $("#pin-err").textContent = ""; }); setTimeout(function () { try { pin.focus(); } catch (e) {} }, 60); }
   }
   function gateName() {
     var roster = CFG.roster || [];
     return '<div class="gate-card"><div class="gate-emoji">🧗</div>' +
       "<h1>" + esc((CFG.trip || {}).title || "MT") + "</h1>" +
       '<div class="steps"><span class="step-dot on"></span><span class="step-dot"></span></div>' +
-      '<p class="gate-p">본인 이름을 선택해 입장하세요. 이미 입장한 이름은 선택할 수 없어요.</p>' +
-      '<input id="gate-search" class="gate-search" placeholder="이름 검색…" autocomplete="off">' +
+      '<p class="gate-p">본인 이름을 선택하세요. 4자리 인증번호로 입장합니다.<br>어느 기기에서든 같은 인증번호로 들어올 수 있어요.</p>' +
       '<div class="gate-grid" id="gate-grid">' + roster.map(function (m) {
         var dm = obj(DB.members)[m.id] || {};
-        var mine = dm.claimed && dm.token === MYTOKEN;
-        var lockedByOther = dm.claimed && dm.token !== MYTOKEN;
-        var cls = "gate-name" + (lockedByOther ? " locked" : "");
-        var tag = lockedByOther ? '<span class="lock-tag">입장함 🔒</span>' : (mine ? '<span class="me-tag">나 ✓</span>' : "");
-        return '<button class="' + cls + '"' + (lockedByOther ? "" : ' data-action="pick-name" data-id="' + m.id + '"') + ">" +
+        var tag = dm.pin ? '<span class="lock-tag">🔑</span>' : '<span class="me-tag">처음</span>';
+        return '<button class="gate-name" data-action="pick-name" data-id="' + m.id + '">' +
           avatar(m.id, 34) + '<span class="nm-main"><span>' + esc(m.name) + "</span>" + (m.admin ? '<span class="rbadge admin">운영진</span>' : "") + "</span>" + tag + "</button>";
       }).join("") + "</div></div>";
+  }
+  function gatePin() {
+    var id = intro.pick, dm = obj(DB.members)[id] || {}, verify = !!dm.pin;
+    return '<div class="gate-card"><div class="gate-emoji">🔑</div>' +
+      "<h1>" + (verify ? "인증번호 입력" : "인증번호 설정") + "</h1>" +
+      '<div class="steps"><span class="step-dot on"></span><span class="step-dot on"></span>' + (verify ? "" : '<span class="step-dot"></span>') + "</div>" +
+      '<div class="profile-who" style="justify-content:center">' + avatar(id, 40) + "<span>" + esc(memberName(id)) + "</span>" + (dm.admin ? '<span class="rbadge admin">운영진</span>' : "") + "</div>" +
+      '<p class="gate-p">' + (verify ? "이 이름의 인증번호 4자리를 입력하세요." : "다른 기기에서도 입장할 때 쓸 4자리 인증번호를 정하세요.") + "</p>" +
+      '<input id="i-pin" class="pin-input" type="text" inputmode="numeric" pattern="[0-9]*" maxlength="4" autocomplete="one-time-code" placeholder="••••">' +
+      '<div id="pin-err" class="pin-err"></div>' +
+      '<div class="intro-foot"><button class="btn-line" data-action="intro-back">‹ 뒤로</button>' +
+      '<button class="btn-pri" data-action="pin-submit" data-id="' + id + '">' + (verify ? "입장" : "다음 →") + "</button></div>" +
+      (verify ? '<p class="gate-p" style="margin-top:12px;font-size:12px">인증번호를 잊었다면 운영진(김찬우·강민관)에게 초기화를 요청하세요.</p>' : "") +
+      "</div>";
   }
   function gateProfile() {
     var id = intro.pick, dm = obj(DB.members)[id] || {};
@@ -289,7 +297,7 @@
     var dl = (CFG.stations || []).map(function (s) { return '<option value="' + esc(s.n) + '">'; }).join("");
     return '<div class="gate-card"><div class="gate-emoji">🚏</div>' +
       "<h1>거의 다 왔어요!</h1>" +
-      '<div class="steps"><span class="step-dot on"></span><span class="step-dot on"></span></div>' +
+      '<div class="steps"><span class="step-dot on"></span><span class="step-dot on"></span><span class="step-dot on"></span></div>' +
       '<div class="profile-box">' +
       '<div class="profile-who">' + avatar(id, 40) + "<span>" + esc(memberName(id)) + "</span>" + (dm.admin ? '<span class="rbadge admin">운영진</span>' : "") + "</div>" +
       '<div class="fld"><label>🚇 출발지 (지하철역)</label>' +
@@ -647,6 +655,13 @@
   function formNewSchedule() { openModal('<h2>일정 추가</h2><div class="row2"><div><label>날짜</label><input id="f-day" type="date" value="' + ((CFG.trip || {}).startDate || "") + '"></div><div><label>시간</label><input id="f-time" type="time"></div></div><label>내용</label><input id="f-title" placeholder="예: 바베큐 시작"><div class="modal-foot"><button class="btn-line" data-action="close-modal">취소</button><button class="btn-pri" data-action="save-schedule">추가</button></div>'); }
   function formNewPacking() { openModal('<h2>준비물 추가</h2><label>준비물</label><input id="f-label" placeholder="예: 아이스박스"><label>종류</label><select id="f-type"><option value="shared">공용 (담당자가 챙김)</option><option value="personal">개인 (전원 각자)</option></select><label>담당자 (공용일 때, 선택)</label><select id="f-assignee"><option value="">미정</option>' + memberOptions("") + '</select><div class="modal-foot"><button class="btn-line" data-action="close-modal">취소</button><button class="btn-pri" data-action="save-packing">추가</button></div>'); }
 
+  function formPin() {
+    openModal('<h2>🔑 인증번호 설정</h2><p class="pf-note" style="margin-bottom:10px">다른 기기(PC 등)에서 같은 이름으로 입장할 때 쓰는 4자리 숫자예요.</p>' +
+      '<label>새 인증번호 (숫자 4자리)</label><input id="np-pin" class="pin-input" type="text" inputmode="numeric" pattern="[0-9]*" maxlength="4" autocomplete="one-time-code" placeholder="••••">' +
+      '<div id="np-err" class="pin-err"></div>' +
+      '<div class="modal-foot"><button class="btn-line" data-action="open-profile">취소</button><button class="btn-pri" data-action="save-pin">저장</button></div>');
+    var i = $("#np-pin"); if (i) { i.addEventListener("input", function () { this.value = this.value.replace(/\D/g, "").slice(0, 4); $("#np-err").textContent = ""; }); setTimeout(function () { try { i.focus(); } catch (e) {} }, 60); }
+  }
   /* 프로필 / 멤버 관리 시트 */
   function formProfile() {
     var m = obj(DB.members)[me] || {};
@@ -658,6 +673,7 @@
       '<div class="pf-photo">' + avatar(me, 72) + '<div class="pf-photo-act"><div class="pf-name">' + esc(memberName(me)) + " " + roleBadge(me) + "</div>" + photoBtns + "</div></div>" +
       '<label>🚇 출발지 (지하철역)</label><input type="text" id="p-station" list="stationlist2" value="' + esc(m.station || "") + '" placeholder="예: 남영"><datalist id="stationlist2">' + dl + "</datalist>" +
       '<label>🚗 자차 보유</label><div class="toggle2"><button id="p-car-no" class="' + (m.hasCar ? "" : "on") + '" data-action="pf-car" data-v="0">없음 🙋</button><button id="p-car-yes" class="' + (m.hasCar ? "on" : "") + '" data-action="pf-car" data-v="1">있음 🚗</button></div>' +
+      '<label>🔑 인증번호</label><div class="pf-pin">' + (m.pin ? "설정됨 " : '<b class="warn">미설정 — 다른 기기 입장하려면 설정하세요 </b>') + '<button class="btn-ghost sm" data-action="set-pin">' + (m.pin ? "변경" : "설정") + "</button></div>" +
       '<div class="modal-foot"><button class="btn-line" data-action="close-modal">닫기</button><button class="btn-pri" data-action="save-profile">저장</button></div>';
     if (isMeAdmin()) {
       h += '<h2 style="margin-top:22px;font-size:16px">👑 운영진 관리</h2><div class="card" style="box-shadow:none;border:1px solid var(--line);margin:0">';
@@ -689,18 +705,35 @@
     var a = t.getAttribute("data-action");
 
     /* 인트로 */
-    if (a === "pick-name") { intro.pick = t.getAttribute("data-id"); intro.step = "profile"; intro.car = !!(obj(DB.members)[intro.pick] || {}).hasCar; renderGate(); return; }
-    if (a === "intro-back") { intro.step = "name"; renderGate(); return; }
+    if (a === "pick-name") { intro.pick = t.getAttribute("data-id"); intro.car = !!(obj(DB.members)[intro.pick] || {}).hasCar; intro.step = "pin"; renderGate(); return; }
+    if (a === "pin-submit") {
+      var pinv = (($("#i-pin") || {}).value || "").replace(/\D/g, "");
+      var pid0 = intro.pick, dmp = obj(DB.members)[pid0] || {};
+      if (pinv.length !== 4) { $("#pin-err").textContent = "숫자 4자리를 입력하세요."; return; }
+      if (dmp.pin) { // 검증
+        if (hashPin(pinv) === dmp.pin) { me = pid0; localStorage.setItem("srk_me", me); intro.step = "name"; intro.pick = null; closeModal(); render(); }
+        else { $("#pin-err").textContent = "인증번호가 달라요. 다시 입력해주세요."; var pe = $("#i-pin"); if (pe) { pe.value = ""; pe.focus(); } }
+      } else { intro.pinValue = pinv; intro.step = "profile"; renderGate(); } // 신규 설정 → 프로필로
+      return;
+    }
+    if (a === "intro-back") { intro.step = (intro.step === "profile") ? "pin" : "name"; renderGate(); return; }
     if (a === "set-car") { intro.car = t.getAttribute("data-v") === "1"; $("#car-yes").classList.toggle("on", intro.car); $("#car-no").classList.toggle("on", !intro.car); return; }
     if (a === "intro-submit") { submitIntro(); return; }
 
     /* 프로필/멤버 */
     if (a === "open-profile") { formProfile(); return; }
+    if (a === "set-pin") { formPin(); return; }
+    if (a === "save-pin") { var v = (($("#np-pin") || {}).value || "").replace(/\D/g, ""); if (v.length !== 4) { $("#np-err").textContent = "숫자 4자리를 입력하세요."; return; } Store.update("members/" + me, { pin: hashPin(v), claimed: true }); if (obj(DB.members)[me]) { DB.members[me].pin = hashPin(v); DB.members[me].claimed = true; } alert("인증번호가 설정됐어요. 다른 기기에서도 이 번호로 입장하세요."); formProfile(); return; }
     if (a === "pick-avatar") { var af = $("#avatar-file"); if (af) af.click(); return; }
     if (a === "remove-avatar") { Store.remove("members/" + me + "/photoUrl"); if (obj(DB.members)[me]) delete DB.members[me].photoUrl; formProfile(); return; }
     if (a === "pf-car") { var v = t.getAttribute("data-v") === "1"; $("#p-car-yes").classList.toggle("on", v); $("#p-car-no").classList.toggle("on", !v); return; }
     if (a === "save-profile") { var pon = $("#p-car-yes").classList.contains("on"); var upd = { station: cleanStation($("#p-station").value), hasCar: pon }; if (pon) upd.rideWith = null; Store.update("members/" + me, upd); closeModal(); return; }
-    if (a === "switch-me") { if (confirm("현재 이름을 비우고 다른 이름으로 입장할까요? (이 이름은 다시 선택 가능해집니다)")) { Store.update("members/" + me, { claimed: false, token: null, rideWith: null }); me = null; localStorage.removeItem("srk_me"); intro.step = "name"; intro.pick = null; closeModal(); renderGate(); } return; }
+    if (a === "switch-me") {
+      if (confirm("이 기기에서 로그아웃할까요?\n(이름·인증번호는 그대로 유지되고, 언제든 인증번호로 다시 입장할 수 있어요)")) {
+        me = null; localStorage.removeItem("srk_me"); intro.step = "name"; intro.pick = null; closeModal(); renderGate();
+      }
+      return;
+    }
     if (a === "set-admin") {
       if (!isMeAdmin()) return;
       var aid = t.getAttribute("data-id"), grant = t.getAttribute("data-v") === "1";
@@ -711,7 +744,7 @@
       }
       Store.update("members/" + aid, { admin: grant }); formProfile(); return;
     }
-    if (a === "release-claim") { if (!isMeAdmin()) return; if (confirm(memberName(t.getAttribute("data-id")) + "님의 입장을 해제할까요?")) { Store.update("members/" + t.getAttribute("data-id"), { claimed: false, token: null, rideWith: null }); formProfile(); } return; }
+    if (a === "release-claim") { if (!isMeAdmin()) return; if (confirm(memberName(t.getAttribute("data-id")) + "님을 입장 해제(인증번호 초기화)할까요?\n이 이름은 다시 인증번호를 설정해 입장할 수 있게 됩니다.")) { Store.update("members/" + t.getAttribute("data-id"), { claimed: false, pin: null, station: null, hasCar: null, rideWith: null }); formProfile(); } return; }
 
     /* 탭 */
     if (a === "tab") { var nt = t.getAttribute("data-tab"); if (nt !== "photo") photoSel = {}; state.tab = nt; state.pollId = null; render(); return; }
@@ -775,23 +808,26 @@
   });
 
   document.addEventListener("keydown", function (ev) {
-    if (ev.key === "Enter" && ev.target.id && ev.target.id.indexOf("cmt-") === 0) sendComment(ev.target.id.slice(4));
+    if (ev.key !== "Enter") return;
+    var idn = ev.target.id || "";
+    if (idn.indexOf("cmt-") === 0) sendComment(idn.slice(4));
+    else if (idn === "i-pin") { var b = document.querySelector('[data-action="pin-submit"]'); if (b) b.click(); }
+    else if (idn === "np-pin") { var b2 = document.querySelector('[data-action="save-pin"]'); if (b2) b2.click(); }
   });
 
   function submitIntro() {
     var id = intro.pick; if (!id) return;
-    var station = cleanStation($("#i-station").value), hasCar = intro.car;
+    var station = cleanStation($("#i-station").value), hasCar = intro.car, pinHash = hashPin(intro.pinValue || "");
     Store.tx("members/" + id, function (m) {
       if (!m) { var r = (CFG.roster || []).find(function (x) { return x.id === id; }) || {}; m = { name: r.name, admin: !!r.admin }; }
-      if (m.claimed && m.token !== MYTOKEN) return undefined; // 이미 선점됨 (token 없는 claimed도 잠금)
-      m.claimed = true; m.token = MYTOKEN; m.claimedAt = Date.now(); m.station = station; m.hasCar = !!hasCar;
+      if (m.pin && m.pin !== pinHash) return undefined; // 누가 먼저 인증번호를 설정함 → 중단
+      m.claimed = true; m.pin = pinHash; m.claimedAt = Date.now(); m.station = station; m.hasCar = !!hasCar;
       return m;
     }).then(function (ok) {
-      if (!ok) { alert("앗, 방금 다른 분이 그 이름으로 먼저 입장했어요. 다른 이름을 선택해주세요."); intro.step = "name"; intro.pick = null; renderGate(); return; }
+      if (!ok) { alert("앗, 방금 다른 분이 이 이름의 인증번호를 먼저 설정했어요. 본인이면 인증번호로 입장해주세요."); intro.step = "pin"; renderGate(); return; }
       DB.members = DB.members || {};
-      DB.members[id] = Object.assign({}, DB.members[id], { claimed: true, token: MYTOKEN, station: station, hasCar: !!hasCar });
-      me = id; localStorage.setItem("srk_me", me); localStorage.setItem("srk_token", MYTOKEN);
-      closeModal(); render();
+      DB.members[id] = Object.assign({}, DB.members[id], { claimed: true, pin: pinHash, station: station, hasCar: !!hasCar });
+      me = id; localStorage.setItem("srk_me", me); intro.step = "name"; intro.pick = null; intro.pinValue = null; closeModal(); render();
     });
   }
   function doVote(pid, oid) {
@@ -906,14 +942,8 @@
     if (!booted) { booted = true; if (seedIfEmpty(DB)) return; }
     if (me && DB.members && Object.keys(DB.members).length) {
       var dmme = DB.members[me];
-      if (!dmme || (dmme.token && dmme.token !== MYTOKEN)) {
-        // 명단에서 빠졌거나 다른 기기가 그 이름을 선점함 → 다시 선택
-        me = null; localStorage.removeItem("srk_me"); intro.step = "name"; intro.pick = null;
-      } else if (!dmme.claimed || dmme.token !== MYTOKEN) {
-        // 같은 기기 재방문인데 입장이 풀려 있음(또는 토큰 미설정) → 재선택 없이 자동 재입장
-        Store.update("members/" + me, { claimed: true, token: MYTOKEN });
-        DB.members[me] = Object.assign({}, dmme, { claimed: true, token: MYTOKEN });
-      }
+      // 이 기기는 localStorage(srk_me)로 기억됨 → 입장 유지. 이름이 사라졌거나 입장 해제(인증 초기화)됐으면 게이트로.
+      if (!dmme || !dmme.claimed) { me = null; localStorage.removeItem("srk_me"); intro.step = "name"; intro.pick = null; }
     }
     render();
   });

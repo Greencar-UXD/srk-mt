@@ -130,8 +130,13 @@ h1, h2 { margin: 0; }
 .gate-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 .gate-name { display: flex; align-items: center; gap: 10px; padding: 12px 14px; background: var(--surface); border: 1.5px solid var(--line); border-radius: 14px; font-weight: 700; font-size: 14.5px; text-align: left; box-shadow: var(--shadow); transition: .12s; position: relative; }
 .gate-name:active { transform: scale(.97); border-color: var(--pri); }
-.gate-name.locked { opacity: .55; cursor: not-allowed; }
-.gate-name.locked:active { transform: none; border-color: var(--line); }
+.gate-name.locked { opacity: .62; }
+.gate-name.locked:active { transform: scale(.97); }
+.gate-name .lock-tag { color: var(--blue); }
+.pin-input { width: 100%; max-width: 240px; margin: 6px auto 0; display: block; text-align: center; font-size: 30px; font-weight: 800; letter-spacing: 14px; padding: 14px 8px 14px 22px; border: 1.5px solid var(--line); border-radius: 14px; background: var(--surface); color: var(--ink); outline: none; }
+.pin-input:focus { border-color: var(--pri); }
+.pin-err { color: var(--neg); font-size: 12.5px; font-weight: 700; min-height: 17px; margin-top: 8px; text-align: center; }
+.pf-pin { display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 700; }
 .gate-name .nm-main { display: flex; flex-direction: column; gap: 2px; min-width: 0; flex: 1; }
 .gate-name .nm-main > span:first-child { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .gate-name .lock-tag { margin-left: auto; font-size: 10px; font-weight: 800; color: var(--muted); flex: none; }
