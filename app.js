@@ -18,6 +18,8 @@
   var state = { tab: "home", pollId: null, prep: "schedule" };
   var intro = { step: "name", pick: null, car: false };
   var booted = false;
+  var photoSel = {};      // 선택된 사진 key 맵
+  var photoUploading = 0; // 업로드 중인 장수
 
   /* ============================================================
      유틸
@@ -197,6 +199,12 @@
   function memberCount() { return Object.keys(obj(DB.members)).length || 1; }
   function readyCount(p) { var mem = obj(DB.members); return Object.keys(obj(p.ready)).filter(function (id) { return mem[id]; }).length; }
 
+  /* ---------- 사진 (Cloudinary) ---------- */
+  function cloudOn() { var c = CFG.cloudinary || {}; return !!(c.cloudName && c.uploadPreset); }
+  function thumbUrl(u) { u = String(u || ""); return u.indexOf("/upload/") >= 0 ? u.replace("/upload/", "/upload/c_fill,w_600,h_600,q_auto,f_auto/") : u; }
+  function attachUrl(u) { u = String(u || ""); return u.indexOf("/upload/") >= 0 ? u.replace("/upload/", "/upload/fl_attachment/") : u; }
+  function selectedPhotoKeys() { return Object.keys(photoSel).filter(function (k) { return photoSel[k] && obj(DB.photos)[k]; }); }
+
   /* ============================================================
      렌더
      ============================================================ */
@@ -210,6 +218,7 @@
     else if (state.tab === "vote") main.innerHTML = state.pollId ? viewPollDetail(state.pollId) : viewVote();
     else if (state.tab === "settle") main.innerHTML = viewSettle();
     else if (state.tab === "carpool") main.innerHTML = viewCarpool();
+    else if (state.tab === "photo") main.innerHTML = viewPhotos();
     else if (state.tab === "prep") main.innerHTML = viewPrep();
     window.scrollTo(0, 0);
   }
@@ -223,7 +232,7 @@
       '<button class="me-chip" data-action="open-profile">' + avatar(me, 30) + "<span>" + esc(memberName(me)) + "</span></button>";
   }
   function renderNav() {
-    var tabs = [["home", "🏠", "홈"], ["vote", "🗳️", "투표"], ["settle", "💸", "정산"], ["carpool", "🚗", "카풀"], ["prep", "🎒", "준비"]];
+    var tabs = [["home", "🏠", "홈"], ["vote", "🗳️", "투표"], ["settle", "💸", "정산"], ["carpool", "🚗", "카풀"], ["photo", "📷", "사진"], ["prep", "🎒", "준비"]];
     $("#app-nav").innerHTML = tabs.map(function (t) {
       return '<button class="navbtn' + (state.tab === t[0] ? " on" : "") + '" data-action="tab" data-tab="' + t[0] + '"><span class="nav-ic">' + t[1] + "</span><span>" + t[2] + "</span></button>";
     }).join("");
@@ -471,6 +480,34 @@
     return ids.slice().sort(function (a, b) { return (sameCluster(ref, b) ? 1 : 0) - (sameCluster(ref, a) ? 1 : 0); });
   }
 
+  /* ---------- 사진 ---------- */
+  function viewPhotos() {
+    var h = '<div class="page-head"><h1>📷 사진</h1>' + (cloudOn() ? '<button class="btn-pri" data-action="pick-photos">+ 사진 올리기</button>' : "") + "</div>";
+    if (!cloudOn()) {
+      h += '<div class="demo-note">📷 사진 기능을 켜려면 <b>Cloudinary 연결</b>이 필요해요. (config.js의 <code>cloudinary</code> 값) — 연결되면 앱 안에서 업로드 · 일부/전체 선택 · 일괄 다운로드가 켜집니다.</div>';
+      return h;
+    }
+    var photos = bySort(entries(DB.photos), function (kv) { return -(kv[1].ts || 0); });
+    if (photoUploading) h += '<div class="hint">⏳ 사진 ' + photoUploading + "장 올리는 중… 잠시만요</div>";
+    var sel = selectedPhotoKeys();
+    var allSel = photos.length > 0 && sel.length === photos.length;
+    h += '<div class="ph-bar"><label class="ph-all"><input type="checkbox" data-action="ph-all"' + (allSel ? " checked" : "") + "> 전체 선택</label>" +
+      '<span class="ph-cnt">' + (sel.length ? sel.length + "장 선택" : photos.length + "장") + "</span>" +
+      (sel.length ? '<button class="link-danger sm" data-action="ph-del">삭제</button><button class="btn-pri sm" data-action="ph-download">⬇ 다운로드 ' + sel.length + "</button>" : "") + "</div>";
+    if (!photos.length) { h += '<div class="empty">아직 사진이 없어요.<br>오른쪽 위 <b>+ 사진 올리기</b>로 추억을 모아봐요!</div>'; return h; }
+    h += '<div class="ph-grid">';
+    photos.forEach(function (kv) {
+      var p = kv[1], on = !!photoSel[kv[0]];
+      h += '<div class="ph-cell' + (on ? " sel" : "") + '" data-action="ph-toggle" data-id="' + kv[0] + '">' +
+        '<img loading="lazy" src="' + esc(thumbUrl(p.url)) + '" alt="">' +
+        '<span class="ph-check">' + (on ? "✓" : "") + "</span>" +
+        '<a class="ph-open" href="' + esc(p.url) + '" target="_blank" rel="noopener" data-action="ph-open" title="원본 보기">⤢</a>' +
+        "</div>";
+    });
+    h += "</div>";
+    return h;
+  }
+
   /* ---------- 준비 ---------- */
   function viewPrep() {
     var seg = [["schedule", "일정"], ["notice", "공지"], ["packing", "준비물"]];
@@ -652,7 +689,7 @@
     if (a === "release-claim") { if (!isMeAdmin()) return; if (confirm(memberName(t.getAttribute("data-id")) + "님의 입장을 해제할까요?")) { Store.update("members/" + t.getAttribute("data-id"), { claimed: false, token: null, rideWith: null }); formProfile(); } return; }
 
     /* 탭 */
-    if (a === "tab") { state.tab = t.getAttribute("data-tab"); state.pollId = null; render(); return; }
+    if (a === "tab") { var nt = t.getAttribute("data-tab"); if (nt !== "photo") photoSel = {}; state.tab = nt; state.pollId = null; render(); return; }
     if (a === "prep") { state.prep = t.getAttribute("data-prep"); render(); return; }
     if (a === "close-modal") { closeModal(); return; }
 
@@ -683,6 +720,19 @@
     if (a === "ride-leave") { var pp2 = t.getAttribute("data-p"); if (!(pp2 === me || ((obj(DB.members)[pp2] || {}).rideWith === me) || isMeAdmin())) return; Store.update("members/" + pp2, { rideWith: null }); return; }
     if (a === "recruit") { var d2 = t.getAttribute("data-d"); if (!(d2 === me || isMeAdmin())) return; chooserModal("주변 탑승자 모집 — 누구를 태울까요?", unassignedPass(), d2, "assign-pass", d2); return; }
     if (a === "assign-pass") { var pid3 = t.getAttribute("data-id"), d3 = t.getAttribute("data-d"); if (isValidDriver(d3)) Store.update("members/" + pid3, { rideWith: d3 }); closeModal(); return; }
+
+    /* 사진 */
+    if (a === "ph-open") { return; } // 앵커 기본 동작(원본 새 탭) 허용
+    if (a === "pick-photos") { var fi = $("#photo-file"); if (fi) fi.click(); return; }
+    if (a === "ph-toggle") { var pk3 = t.getAttribute("data-id"); if (photoSel[pk3]) delete photoSel[pk3]; else photoSel[pk3] = true; render(); return; }
+    if (a === "ph-all") { ev.preventDefault(); var ph = Object.keys(obj(DB.photos)); var cur = selectedPhotoKeys(); if (cur.length === ph.length) photoSel = {}; else { photoSel = {}; ph.forEach(function (k) { photoSel[k] = true; }); } render(); return; }
+    if (a === "ph-download") { downloadSelected(selectedPhotoKeys()); return; }
+    if (a === "ph-del") {
+      var del = selectedPhotoKeys().filter(function (k) { var p = obj(DB.photos)[k]; return p && (p.by === me || isMeAdmin()); });
+      if (!del.length) { alert("본인이 올린 사진만 삭제할 수 있어요 (운영진은 전체 가능)."); return; }
+      if (confirm(del.length + "장을 목록에서 삭제할까요? (다운로드한 사진은 그대로 남습니다)")) { del.forEach(function (k) { Store.remove("photos/" + k); delete photoSel[k]; }); }
+      return;
+    }
 
     /* 공지/일정/준비물 */
     if (a === "new-notice") { if (isMeAdmin()) formNewNotice(); return; }
@@ -752,6 +802,37 @@
   function saveNotice() { if (!isMeAdmin()) return; var v = $("#f-text").value.trim(); if (!v) return; Store.push("notices", { text: clampStr(v, 1000), by: me, pinned: $("#f-pin").checked, ts: Date.now() }); closeModal(); }
   function saveSchedule() { if (!isMeAdmin()) return; var day = $("#f-day").value, time = $("#f-time").value, title = $("#f-title").value.trim(); if (!day || !time || !title) { alert("날짜·시간·내용을 모두 입력하세요"); return; } Store.push("schedule", { day: day, time: time, title: clampStr(title, 100), ts: Date.now() }); closeModal(); }
   function savePacking() { if (!isMeAdmin()) return; var label = $("#f-label").value.trim(); if (!label) return; Store.push("packing", { label: clampStr(label, 80), type: $("#f-type").value, assignee: $("#f-assignee").value || null, done: false, ready: {}, ts: Date.now() }); closeModal(); }
+
+  /* 사진 업로드 (Cloudinary unsigned) */
+  function uploadPhotos(files) {
+    if (!cloudOn()) { alert("사진 기능을 켜려면 Cloudinary 연결이 필요해요."); return; }
+    var arr = Array.prototype.slice.call(files || []).filter(function (f) { return f && f.type && f.type.indexOf("image/") === 0; });
+    if (!arr.length) return;
+    var c = CFG.cloudinary, url = "https://api.cloudinary.com/v1_1/" + c.cloudName + "/upload";
+    photoUploading += arr.length; if (state.tab === "photo") render();
+    arr.forEach(function (f) {
+      var fd = new FormData(); fd.append("file", f); fd.append("upload_preset", c.uploadPreset);
+      fetch(url, { method: "POST", body: fd }).then(function (r) { return r.json(); }).then(function (j) {
+        if (j && j.secure_url) Store.push("photos", { url: j.secure_url, publicId: j.public_id || "", w: j.width || 0, h: j.height || 0, name: clampStr(f.name, 80), by: me, ts: Date.now() });
+        else alert("사진 업로드 실패: " + ((j && j.error && j.error.message) || "Cloudinary 설정(프리셋이 Unsigned인지) 확인"));
+      }).catch(function () { alert("사진 업로드 중 네트워크 오류가 발생했어요."); }).then(function () { photoUploading = Math.max(0, photoUploading - 1); if (state.tab === "photo") render(); });
+    });
+  }
+  function triggerDl(href, name) { var a = document.createElement("a"); a.href = href; a.download = name || "photo"; a.target = "_blank"; a.rel = "noopener"; document.body.appendChild(a); a.click(); a.remove(); }
+  function downloadSelected(keys) {
+    keys = (keys || []).filter(function (k) { return obj(DB.photos)[k]; });
+    if (!keys.length) return;
+    if (keys.length === 1) { var p0 = DB.photos[keys[0]]; triggerDl(attachUrl(p0.url), p0.name || "photo.jpg"); return; }
+    if (!window.JSZip) { keys.forEach(function (k) { window.open(attachUrl(DB.photos[k].url), "_blank"); }); return; }
+    var zip = new JSZip(), i = 0;
+    Promise.all(keys.map(function (k) {
+      var p = DB.photos[k];
+      return fetch(p.url).then(function (r) { return r.blob(); }).then(function (b) { i++; var nm = p.name || ("photo" + i); if (!/\.[a-z0-9]+$/i.test(nm)) nm += ".jpg"; zip.file(i + "_" + nm, b); });
+    })).then(function () { return zip.generateAsync({ type: "blob" }); })
+      .then(function (blob) { triggerDl(URL.createObjectURL(blob), "슈리키-사진.zip"); })
+      .catch(function () { alert("일괄 압축에 실패해 개별로 엽니다."); keys.forEach(function (k) { window.open(attachUrl(DB.photos[k].url), "_blank"); }); });
+  }
+  (function bindPhotoInput() { var fi = $("#photo-file"); if (fi) fi.addEventListener("change", function () { uploadPhotos(this.files); this.value = ""; }); })();
 
   /* ============================================================
      부팅

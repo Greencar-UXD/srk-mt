@@ -66,13 +66,13 @@ h1, h2 { margin: 0; }
 #app-nav {
   position: fixed; bottom: 0; left: 0; right: 0; z-index: 30;
   max-width: var(--maxw); margin: 0 auto; height: var(--nav-h);
-  display: grid; grid-template-columns: repeat(5, 1fr);
+  display: grid; grid-template-columns: repeat(6, 1fr);
   background: color-mix(in srgb, var(--surface) 92%, transparent);
   backdrop-filter: saturate(180%) blur(12px); border-top: 1px solid var(--line);
   padding-bottom: env(safe-area-inset-bottom);
 }
-.navbtn { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; font-size: 10.5px; font-weight: 700; color: var(--muted); transition: color .15s; }
-.navbtn .nav-ic { font-size: 19px; filter: grayscale(.4) opacity(.7); transition: .15s; }
+.navbtn { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; font-size: 10px; font-weight: 700; color: var(--muted); transition: color .15s; }
+.navbtn .nav-ic { font-size: 18px; filter: grayscale(.4) opacity(.7); transition: .15s; }
 .navbtn.on { color: var(--pri); }
 .navbtn.on .nav-ic { filter: none; transform: translateY(-1px); }
 
@@ -258,6 +258,25 @@ h1, h2 { margin: 0; }
 .cp-near { font-size: 10.5px; font-weight: 800; color: var(--green); margin-left: 4px; }
 .cp-mine { border: 1.5px solid var(--pri); }
 
+/* ---------- 사진 ---------- */
+.ph-bar { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; position: sticky; top: 56px; z-index: 5; background: var(--bg); padding: 6px 0; }
+.ph-all { display: flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 700; }
+.ph-all input { width: 18px; height: 18px; accent-color: var(--pri); }
+.ph-cnt { font-size: 12.5px; color: var(--muted); font-weight: 700; }
+.ph-bar .btn-pri.sm, .ph-bar .link-danger.sm { margin-left: auto; }
+.ph-bar .btn-pri.sm { padding: 7px 12px; font-size: 12.5px; }
+.ph-bar .link-danger.sm { margin-left: auto; font-size: 12.5px; padding: 7px 4px; }
+.ph-bar .btn-pri.sm + .link-danger.sm, .ph-bar .link-danger.sm + .btn-pri.sm { margin-left: 0; }
+.ph-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+.ph-cell { position: relative; aspect-ratio: 1 / 1; border-radius: 12px; overflow: hidden; background: color-mix(in srgb, var(--ink) 6%, var(--surface)); cursor: pointer; }
+.ph-cell img { width: 100%; height: 100%; object-fit: cover; display: block; transition: transform .2s; }
+.ph-cell:active img { transform: scale(.97); }
+.ph-check { position: absolute; top: 7px; left: 7px; width: 22px; height: 22px; border-radius: 50%; border: 2px solid #fff; background: rgba(0,0,0,.25); color: #fff; font-size: 13px; font-weight: 900; display: flex; align-items: center; justify-content: center; box-shadow: 0 1px 3px rgba(0,0,0,.3); }
+.ph-cell.sel { outline: 3px solid var(--pri); outline-offset: -3px; }
+.ph-cell.sel .ph-check { background: var(--pri); border-color: #fff; }
+.ph-cell.sel img { transform: scale(.94); }
+.ph-open { position: absolute; bottom: 6px; right: 6px; width: 26px; height: 26px; border-radius: 8px; background: rgba(0,0,0,.45); color: #fff; display: flex; align-items: center; justify-content: center; font-size: 13px; text-decoration: none; }
+
 /* ---------- 준비 (세그먼트) ---------- */
 .seg { display: flex; background: color-mix(in srgb, var(--ink) 5%, var(--surface)); border-radius: 12px; padding: 4px; margin-bottom: 16px; }
 .seg-b { flex: 1; padding: 8px; border-radius: 9px; font-weight: 700; font-size: 13px; color: var(--muted); }
@@ -355,6 +374,8 @@ h1, h2 { margin: 0; }
   .gate-grid { grid-template-columns: repeat(3, 1fr); }
   .cp-board { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; align-items: start; }
   .cp-board > * { margin-bottom: 0; }
+  .ph-grid { grid-template-columns: repeat(5, 1fr); gap: 10px; }
+  .ph-bar { top: 0; }
   .modal { left: 50%; transform: translateX(-50%); bottom: auto; top: 50%; margin-top: 0;
     transform: translate(-50%, -50%); border-radius: 20px; max-width: 480px; animation: pop .2s ease; }
   @keyframes pop { from { opacity: 0; transform: translate(-50%, -46%) scale(.97); } to { opacity: 1; transform: translate(-50%, -50%) scale(1); } }
