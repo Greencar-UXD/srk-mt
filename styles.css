@@ -481,8 +481,8 @@ h1, h2 { margin: 0; }
   .cp-board > * { margin-bottom: 0; }
   .ph-grid { grid-template-columns: repeat(5, 1fr); gap: 10px; }
   .ph-bar { top: 0; }
-  .modal { left: 50%; transform: translateX(-50%); bottom: auto; top: 50%; margin-top: 0;
-    transform: translate(-50%, -50%); border-radius: 20px; max-width: 480px; animation: pop .2s ease; }
+  .modal { left: 50%; right: auto; top: 50%; bottom: auto; margin: 0;
+    transform: translate(-50%, -50%); border-radius: 20px; width: calc(100% - 48px); max-width: 480px; animation: pop .2s ease; }
   @keyframes pop { from { opacity: 0; transform: translate(-50%, -46%) scale(.97); } to { opacity: 1; transform: translate(-50%, -50%) scale(1); } }
 }
 @media (min-width: 880px) {
