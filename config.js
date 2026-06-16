@@ -18,8 +18,8 @@ window.SRK_CONFIG = {
      절차대로 아래 2개를 채우면 앱 내 업로드/다운로드가 켜집니다.
      (원본 사진은 Cloudinary에 저장, 우리 DB엔 URL만 — 용량 절약) */
   cloudinary: {
-    cloudName: "",
-    uploadPreset: ""   // 반드시 'Unsigned' 업로드 프리셋
+    cloudName: "dpv6iqkfu",
+    uploadPreset: "ml_default"   // Unsigned 프리셋 (검증 완료 · srk-mt 폴더로 저장)
   },
 
   /* ── 1-3) 미디어 자동 축소 (업로드 전 브라우저에서) ──────────────
