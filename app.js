@@ -421,10 +421,10 @@
       '<button class="stat" data-action="tab" data-tab="my"><div class="stat-n">' + packDone + "/" + packArr.length + '</div><div class="stat-l">준비물</div></button></div>';
 
     // 내 이동(카풀)
-    h += '<div class="card" data-action="tab" data-tab="carpool"><div class="ms-row"><span>🚗 내 이동</span><span class="ms-amt" style="font-size:13px">' + myRideLabel() + "</span></div></div>";
+    h += '<div class="card col" data-action="tab" data-tab="carpool"><div class="ms-row"><span>🚗 내 이동</span><span class="ms-amt" style="font-size:13px">' + myRideLabel() + "</span></div></div>";
 
     // 내 정산
-    h += '<div class="card my-settle ' + (myNet > 0 ? "pos" : myNet < 0 ? "neg" : "") + '" data-action="tab" data-tab="settle">' +
+    h += '<div class="card my-settle col ' + (myNet > 0 ? "pos" : myNet < 0 ? "neg" : "") + '" data-action="tab" data-tab="settle">' +
       '<div class="ms-row"><span>' + avatar(me, 26) + " <b>" + esc(memberName(me)) + "</b>님 정산</span><span class=\"ms-amt\">" +
       (myNet > 0 ? "받을 돈 " + won(myNet) : myNet < 0 ? "보낼 돈 " + won(-myNet) : "정산 완료 ✓") + "</span></div>" +
       '<div class="ms-sub">낸 돈 ' + won(myPaid(me)) + " · 내 몫 " + won(myShare(me)) + "</div></div>";
@@ -515,7 +515,7 @@
     var bal = computeBalances(), myNet = Math.round(bal[me] || 0);
     var transfers = minimalTransfers(bal).filter(function (t) { return t.from === me || t.to === me; });
     var paid = obj((obj(DB.members)[me] || {}).paid);
-    var h = '<div class="card my-settle big ' + (myNet > 0 ? "pos" : myNet < 0 ? "neg" : "") + '"><div class="ms-row"><span>' + avatar(me, 28) + " <b>" + esc(memberName(me)) + "</b>님 정산</span><span class=\"ms-amt\">" +
+    var h = '<div class="card my-settle big col ' + (myNet > 0 ? "pos" : myNet < 0 ? "neg" : "") + '"><div class="ms-row"><span>' + avatar(me, 28) + " <b>" + esc(memberName(me)) + "</b>님 정산</span><span class=\"ms-amt\">" +
       (myNet > 0 ? "받을 돈 " + won(myNet) : myNet < 0 ? "낼 돈 " + won(-myNet) : "정산 완료 ✓") + "</span></div><div class=\"ms-sub\">낸 돈 " + won(myPaid(me)) + " · 내 몫 " + won(myShare(me)) + "</div>";
     if (transfers.length) {
       h += '<div class="ms-actions">';
@@ -557,12 +557,11 @@
   function viewMy() {
     var m = obj(DB.members)[me] || {};
     var h = '<div class="page-head"><h1>마이</h1><button class="btn-line sm" data-action="open-profile">프로필·설정</button></div>';
-    h += '<div class="card my-profile" data-action="open-profile"><div class="mp-top">' + avatar(me, 52) +
+    h += '<div class="card my-profile col" data-action="open-profile"><div class="mp-top">' + avatar(me, 52) +
       '<div class="mp-info"><div class="mp-name">' + esc(memberName(me)) + " " + roleBadge(me) + "</div>" +
       '<div class="mp-sub">' + (normStation(m.station) ? esc(normStation(m.station)) + "역" : "출발지 미정") + " · " + (m.hasCar ? "자차 있음" : "탑승") + (m.pin ? "" : ' · <span class="warn">인증번호 미설정</span>') + "</div></div>" +
       '<span class="mp-go">' + icon("edit", 18) + "</span></div></div>";
 
-    h += '<h2 class="sec">내 정산</h2>';
     h += mySettleCard();
     h += '<button class="btn-line btn-block" data-action="go-settle">지출 내역 전체 보기 ›</button>';
 
