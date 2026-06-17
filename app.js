@@ -46,9 +46,9 @@
   var _kc = 0;
   function key() { return "k" + Date.now().toString(36) + (_kc++).toString(36) + Math.random().toString(36).slice(2, 6); }
 
-  function memberName(id) { var m = obj(DB.members)[id]; return m && m.name ? m.name : (id || "?"); }
+  function memberName(id) { var m = obj(DB.members)[id]; if (m && m.name) return m.name; var r = rosterEntry(id); return r ? r.name : (id || "?"); }
   // 위계: manager(관리자) > staff(운영진) > crew(크루원). 레거시 admin:true → staff로 간주
-  function roleOf(id) { var m = obj(DB.members)[id] || {}; return m.role || (m.admin ? "staff" : "crew"); }
+  function roleOf(id) { var m = obj(DB.members)[id] || {}; if (m.role) return m.role; if (m.admin) return "staff"; var r = rosterEntry(id); return (r && r.role) || "crew"; }
   function isManager(id) { return roleOf(id) === "manager"; }
   function canManage(id) { return roleOf(id) !== "crew"; }   // 관리자·운영진 = 관리 권한
   function isAdmin(id) { return canManage(id); }              // (구코드 호환 — 관리권한 여부)
@@ -158,6 +158,8 @@
   function clubById(id) { if (id && id.indexOf("dbc:") === 0) { var k = id.slice(4), v = obj(DB.clubs)[k]; if (!v) return null; var c = Object.assign({}, v); c.id = id; c._user = true; c._key = k; return c; } var f = null; (CFG.clubs || []).forEach(function (x) { if (x.id === id) f = x; }); return f; }
   function currentClub() { return clubById(state.clubId) || (CFG.clubs || [])[0] || null; }
   function sessionsOfClub(cid) { return allSessions().filter(function (s) { return (s.clubId || "srk") === (cid || "srk"); }); }
+  function clubRoster(cid) { cid = cid || state.clubId || "srk"; var c = clubById(cid); if (c && c.roster && c.roster.length) return c.roster; if (cid === "srk") return CFG.roster || []; return []; }
+  function rosterEntry(id) { var f = (CFG.roster || []).filter(function (r) { return r.id === id; })[0]; if (f) return f; var cs = allClubs(); for (var i = 0; i < cs.length; i++) { var rs = cs[i].roster || []; for (var j = 0; j < rs.length; j++) { if (rs[j].id === id) return rs[j]; } } return null; }
 
   /* 역 → 권역 */
   var STN_MAP = {}; (CFG.stations || []).forEach(function (s) { STN_MAP[s.n] = s.c; });
@@ -250,9 +252,9 @@
   }
   // 현재 세션의 멤버 ID (participants 있으면 그 부분집합, 없으면 전체 = summer-mt 호환)
   function sessionMemberIds() {
-    var mem = obj(DB.members), p = DB.participants;
-    if (p && Object.keys(p).length) return Object.keys(p).filter(function (id) { return mem[id]; });
-    return Object.keys(mem);
+    var p = DB.participants, ids = clubRoster().map(function (r) { return r.id; });
+    if (p && Object.keys(p).length) return Object.keys(p).filter(function (id) { return ids.indexOf(id) >= 0; });
+    return ids;
   }
   // 현재 세션의 여행 메타(제목·날짜·장소·정원…). summer-mt는 CFG.trip + DB.trip(heroImage 등)
   function tripMeta() {
@@ -420,7 +422,8 @@
     if (mode === "info") { $("#gate").classList.add("hidden"); renderHeader(sess); $("#app-nav").innerHTML = ""; setChrome(true); main.innerHTML = viewSessionInfo(sess); window.scrollTo(0, 0); return; }
     // 실시간 앱 세션 — 입장(로그인) 필요
     var m = me && obj(DB.members)[me];
-    if (!me || !m || !m.claimed) { renderGate(); return; }
+    var inClub = me && clubRoster().some(function (r) { return r.id === me; });
+    if (!me || !m || !m.claimed || !inClub) { renderGate(); return; }
     $("#gate").classList.add("hidden");
     if (state.tab === "vote" || state.tab === "settle") { state.alert = state.tab === "settle" ? "settle" : "vote"; state.tab = "alert"; }
     if (state.tab === "prep") state.tab = "my";
@@ -509,7 +512,7 @@
     bindPin($("#i-pin"), $("#pin-cells"), $("#pin-err"));
   }
   function gateName() {
-    var roster = CFG.roster || [], sess = currentSession() || {};
+    var roster = clubRoster(), sess = currentSession() || {};
     return '<div class="gate-card">' +
       '<button class="gate-back" data-action="go-hub" aria-label="세션 목록으로">' + icon("back", 18) + "<span>세션 목록</span></button>" +
       '<div class="gate-emoji"' + (sess.emoji ? ' style="font-size:44px"' : "") + '>' + (sess.emoji ? esc(sess.emoji) : icon("mountain", 48)) + '</div>' +
@@ -680,7 +683,7 @@
       '<label>분류</label><select id="f-scat">' + ["정기 모임", "외부 활동", "MT·여행", "대회·시합", "번개", "기타"].map(function (cc) { var curC = (ed && ed.category) || "정기 모임"; return '<option' + (cc === curC ? " selected" : "") + ">" + cc + "</option>"; }).join("") + '</select>' +
       '<label>\uCC38\uAC00 \uD06C\uB8E8\uC6D0 <button class="mini" data-action="sess-part-all">\uC804\uCCB4</button><button class="mini" data-action="sess-part-none">\uD574\uC81C</button></label>' +
       '<p class="pf-note" style="margin:0 0 8px">\uC774 \uC138\uC158\uC5D0 \uCC38\uAC00\uD560 \uC0AC\uB78C\uB9CC \uACE8\uB77C\uC694. \uC815\uC0B0\u00B7\uCE74\uD480\u00B7\uD22C\uD45C\uAC00 \uC120\uD0DD\uD55C \uC0AC\uB78C \uAE30\uC900\uC73C\uB85C \uAD6C\uC131\uB3FC\uC694.</p>' +
-      '<div class="part-grid">' + (CFG.roster || []).map(function (m) { return '<label class="pchk"><input type="checkbox" class="f-sess-part" value="' + m.id + '"' + (spOn(m.id) ? " checked" : "") + ">" + avatar(m.id, 24) + "<span>" + esc(m.name) + "</span></label>"; }).join("") + '</div>' +
+      '<div class="part-grid">' + clubRoster().map(function (m) { return '<label class="pchk"><input type="checkbox" class="f-sess-part" value="' + m.id + '"' + (spOn(m.id) ? " checked" : "") + ">" + avatar(m.id, 24) + "<span>" + esc(m.name) + "</span></label>"; }).join("") + '</div>' +
       '<div class="modal-foot"><button class="btn-line" data-action="close-modal">\uCDE8\uC18C</button><button class="btn-pri" data-action="save-session"' + (ed ? ' data-edit="' + esc(editId) + '"' : "") + '>' + (ed ? "\uC800\uC7A5" : "\uCD94\uAC00") + "</button></div>");
   }
   function viewHome() {
@@ -1070,7 +1073,7 @@
      ============================================================ */
   function openModal(html) { var r = $("#modal-root"); r.innerHTML = '<div class="modal-back" data-action="close-modal"></div><div class="modal">' + html + "</div>"; r.classList.add("open"); }
   function closeModal() { var r = $("#modal-root"); r.classList.remove("open"); r.innerHTML = ""; }
-  function memberOptions(sel) { return (CFG.roster || []).map(function (m) { return '<option value="' + m.id + '"' + (sel === m.id ? " selected" : "") + ">" + esc(m.name) + "</option>"; }).join(""); }
+  function memberOptions(sel) { return clubRoster().map(function (m) { return '<option value="' + m.id + '"' + (sel === m.id ? " selected" : "") + ">" + esc(m.name) + "</option>"; }).join(""); }
 
   function formNewPoll() {
     openModal('<h2>새 투표</h2><label>질문</label><input id="f-title" placeholder="예: 27일 저녁 메뉴는?">' +
@@ -1186,7 +1189,7 @@
       h += '<h2 style="margin-top:24px;font-size:16px">멤버·권한 관리</h2>' +
         '<p class="pf-note" style="margin:0 0 8px">관리자·운영진은 <b>운영진 지정</b>·<b>크루원 삭제</b> 가능. 운영진 해제는 관리자만.</p>' +
         '<div class="card" style="margin:0">';
-      (CFG.roster || []).forEach(function (r) {
+      clubRoster().forEach(function (r) {
         var dm = obj(DB.members)[r.id] || {}, tr = roleOf(r.id), self = (r.id === me), acts = "";
         if (!self) {
           if (tr === "manager") { acts = ""; }
@@ -1449,7 +1452,7 @@
     var id = intro.pick; if (!id) return;
     var station = cleanStation($("#i-station").value), hasCar = intro.car, pinHash = hashPin(intro.pinValue || "");
     Store.tx("members/" + id, function (m) {
-      if (!m) { var r = (CFG.roster || []).find(function (x) { return x.id === id; }) || {}; m = { name: r.name, admin: !!r.admin }; }
+      if (!m) { var r = clubRoster().find(function (x) { return x.id === id; }) || rosterEntry(id) || {}; m = { name: r.name, role: r.role || "crew" }; }
       if (m.pin && m.pin !== pinHash) return undefined; // 누가 먼저 인증번호를 설정함 → 중단
       m.claimed = true; m.pin = pinHash; m.claimedAt = Date.now(); m.station = station; m.hasCar = !!hasCar;
       return m;

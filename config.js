@@ -54,7 +54,17 @@ window.SRK_CONFIG = {
      크루가 앱 안에서 '세션 추가하기'로 만든 카드는 DB(sessions)에 따로 저장돼요.
      accent: red / blue / green / purple / orange (카드·배너 색) */
   clubs: [
-    { id: "srk", name: "슈퍼리치키드", sport: "climbing", emoji: "🧗", accent: "red", desc: "클라이밍 크루 — MT·원정·정기 모임" }
+    { id: "srk", name: "슈퍼리치키드", sport: "climbing", emoji: "🧗", accent: "red", desc: "클라이밍 크루 — MT·원정·정기 모임" },
+    { id: "jrd", name: "지리아드", sport: "billiards", emoji: "🎱", accent: "blue", desc: "그린카 당구 동호회",
+      roster: [
+        { id: "m17", name: "강민관", role: "manager" },
+        { id: "jrd01", name: "정종욱" }, { id: "jrd02", name: "조민호" }, { id: "jrd03", name: "진익영" },
+        { id: "jrd04", name: "김경호" }, { id: "jrd05", name: "김규식" }, { id: "jrd06", name: "김보성" },
+        { id: "jrd07", name: "김성준" }, { id: "jrd08", name: "김유현" }, { id: "jrd09", name: "김정수" },
+        { id: "jrd10", name: "문영건" }, { id: "jrd11", name: "박수홍" }, { id: "jrd12", name: "배지현" },
+        { id: "jrd13", name: "서지유" }, { id: "jrd14", name: "왕건모" }, { id: "jrd15", name: "이순란" },
+        { id: "jrd16", name: "이정걸" }, { id: "jrd17", name: "이진주" }, { id: "jrd18", name: "장정우" }
+      ] }
   ],
   sessions: [
     {
