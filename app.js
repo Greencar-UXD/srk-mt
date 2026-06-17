@@ -463,8 +463,8 @@
   function goBack() {
     if (viewHist.length) {
       var p = viewHist.pop().split("|");
-      state.screen = p[0] || "session"; state.sessionId = p[1] || "summer-mt";
-      state.tab = p[2] || "home"; state.alert = p[3] || "notice"; state.pollId = p[4] || null;
+      state.screen = p[0] || "clubs"; state.clubId = p[1] || null; state.sessionId = p[2] || "summer-mt";
+      state.tab = p[3] || "home"; state.alert = p[4] || "notice"; state.pollId = p[5] || null;
       backing = true;
     } else if (state.screen === "session") { state.screen = "hub"; state.pollId = null; }
     else if (state.screen === "hub") { state.screen = "clubs"; state.clubId = null; state.pollId = null; }
