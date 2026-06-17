@@ -1735,7 +1735,7 @@
       if (isNew) { m.name = newName; m.clubId = cid; m.self = true; }
       return m;
     }).then(function (ok) {
-      if (!ok) { alert("앗, 방금 다른 분이 이 이름의 인증번호를 먼저 설정했어요. 본인이면 인증번호로 입장해주세요."); intro.step = "pin"; renderGate(); return; }
+      if (!ok) { alert("앗, 다른 기기·브라우저에서 이미 이 이름의 인증번호가 설정됐어요. 그 번호를 알면 입력해 입장하고, 모르면 운영진에게 문의해 주세요."); intro.step = "pin"; renderGate(); return; }
       DB.members = DB.members || {};
       DB.members[id] = Object.assign({}, DB.members[id], { claimed: true, pin: pinHash, station: station, hasCar: !!hasCar });
       if (isNew) {

@@ -42,7 +42,10 @@
   --shadow-md:0 2px 4px rgba(16,18,29,.05), 0 8px 16px -8px rgba(16,18,29,.12);
   --shadow-lg:0 4px 8px rgba(16,18,29,.05), 0 20px 40px -16px rgba(16,18,29,.18);
   --shadow-xl:0 8px 16px rgba(16,18,29,.06), 0 32px 64px -24px rgba(16,18,29,.24);
-  --ease-out:cubic-bezier(.2,.8,.2,1);
+  --ease-out:cubic-bezier(.2,.8,.2,1); --ease-in-out:cubic-bezier(.4,0,.2,1);
+  --dur-fast:.12s; --dur-base:.2s; --dur-slow:.32s;
+  --fw-regular:400; --fw-medium:500; --fw-semibold:600; --fw-bold:700;
+  --space-0:0; --space-12:48px; --space-16:64px; --space-20:80px; --space-24:96px;
 
   /* ---- Type families ---- */
   --font-text:"Pretendard Variable", Pretendard, -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Malgun Gothic", system-ui, sans-serif;
@@ -168,6 +171,12 @@ h1, h2 { margin: 0; }
 .btn-line { background: var(--surface); border: 1px solid var(--line); color: var(--ink); font-weight: 700; padding: 8px 16px; border-radius: 12px; font-size: 14px; }
 .btn-ghost { background: color-mix(in srgb, var(--pri) 10%, transparent); color: var(--pri); font-weight: 800; padding: 8px 12px; border-radius: 8px; font-size: 12px; }
 .btn-ghost.sm { padding: 4px 8px; font-size: 12px; margin: 0px 0 8px; }
+.btn-pri, .btn-line, .btn-ghost { transition: background var(--dur-fast) var(--ease-out), border-color var(--dur-fast) var(--ease-out), color var(--dur-fast) var(--ease-out), transform var(--dur-fast) var(--ease-out); }
+@media (hover: hover) {
+  .btn-pri:hover { background: var(--pri-d); }
+  .btn-line:hover { background: color-mix(in srgb, var(--ink) 5%, var(--surface)); }
+  .btn-ghost:hover { background: color-mix(in srgb, var(--pri) 18%, transparent); }
+}
 .btn-block { display: block; width: 100%; text-align: center; margin-top: 8px; }
 .link { color: var(--pri); font-weight: 700; font-size: 12px; }
 .link-danger { color: var(--neg); font-weight: 700; font-size: 12px; }
