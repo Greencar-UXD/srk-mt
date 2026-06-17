@@ -148,6 +148,8 @@ h1, h2 { margin: 0; }
 #gate { position: fixed; inset: 0; z-index: 100; background: var(--bg); overflow-y: auto; }
 #gate.hidden { display: none; }
 .gate-card { max-width: 560px; width: 100%; margin: 0 auto; padding: 40px 24px 60px; text-align: center; }
+.gate-back { position: absolute; top: 16px; left: 16px; display: inline-flex; align-items: center; gap: 4px; padding: 8px 12px; border: 1px solid var(--line); border-radius: var(--r-2); background: var(--surface); color: var(--ink); font-size: 14px; font-weight: 600; cursor: pointer; }
+.gate-back svg { display: block; }
 .gate-emoji { color: var(--pri); margin-bottom: 8px; display: flex; align-items: center; justify-content: center; }
 .gate-card h1 { font-size: 24px; font-weight: 850; margin: 8px 0 0px; letter-spacing: -.5px; }
 .gate-p { color: var(--muted); font-size: 14px; margin: 0 0 16px; }

@@ -15,7 +15,7 @@
   var me = localStorage.getItem("srk_me") || null;
   var MYTOKEN = localStorage.getItem("srk_token") || ("t" + Date.now().toString(36) + Math.random().toString(36).slice(2, 8));
   localStorage.setItem("srk_token", MYTOKEN);
-  var state = { screen: "session", sessionId: "summer-mt", tab: "home", pollId: null, alert: "notice" };
+  var state = { screen: "hub", sessionId: "summer-mt", tab: "home", pollId: null, alert: "notice" };
   var viewHist = [], lastSig = null, backing = false; // 뒤로가기용 화면 히스토리
   var intro = { step: "name", pick: null, car: false };
   var booted = false;
@@ -389,11 +389,6 @@
   function setChrome(nonav) { var app = $("#app"); if (app) app.classList.toggle("nonav", !!nonav); }
   function render() {
     rebuildDB();   // 현재 세션 기준으로 DB 뷰 재구성
-    var m = me && obj(DB.members)[me];
-    if (!me || !m || !m.claimed) { renderGate(); return; }
-    $("#gate").classList.add("hidden");
-    if (state.tab === "vote" || state.tab === "settle") { state.alert = state.tab === "settle" ? "settle" : "vote"; state.tab = "alert"; } // 구 탭 → 알림으로 통합
-    if (state.tab === "prep") state.tab = "my"; // 준비물 → 마이 탭으로 이동
     var sess = state.screen === "hub" ? null : currentSession();
     var mode = state.screen === "hub" ? "hub" : (sess && sess.kind === "info" ? "info" : "app");
     // 뒤로가기 히스토리 기록 (화면·세션·탭 단위)
@@ -401,9 +396,14 @@
     if (lastSig !== null && lastSig !== sig) { if (backing) backing = false; else { viewHist.push(lastSig); if (viewHist.length > 40) viewHist.shift(); } }
     lastSig = sig;
     var main = $("#app-main");
-    if (mode === "hub") { renderHubHeader(); $("#app-nav").innerHTML = ""; setChrome(true); main.innerHTML = viewHub(); window.scrollTo(0, 0); return; }
-    if (mode === "info") { renderHeader(sess); $("#app-nav").innerHTML = ""; setChrome(true); main.innerHTML = viewSessionInfo(sess); window.scrollTo(0, 0); return; }
-    // 실시간 앱 세션
+    if (mode === "hub") { $("#gate").classList.add("hidden"); renderHubHeader(); $("#app-nav").innerHTML = ""; setChrome(true); main.innerHTML = viewHub(); window.scrollTo(0, 0); return; }
+    if (mode === "info") { $("#gate").classList.add("hidden"); renderHeader(sess); $("#app-nav").innerHTML = ""; setChrome(true); main.innerHTML = viewSessionInfo(sess); window.scrollTo(0, 0); return; }
+    // 실시간 앱 세션 — 입장(로그인) 필요
+    var m = me && obj(DB.members)[me];
+    if (!me || !m || !m.claimed) { renderGate(); return; }
+    $("#gate").classList.add("hidden");
+    if (state.tab === "vote" || state.tab === "settle") { state.alert = state.tab === "settle" ? "settle" : "vote"; state.tab = "alert"; }
+    if (state.tab === "prep") state.tab = "my";
     setChrome(false);
     renderHeader(sess); renderNav();
     if (state.tab === "home") main.innerHTML = viewHome();
@@ -436,10 +436,11 @@
       '<button class="bell-btn" data-action="open-notifs" aria-label="알림">' + icon("bell", 22) + (unread ? '<span class="bell-badge">' + (unread > 9 ? "9+" : unread) + "</span>" : "") + "</button>";
   }
   function renderHubHeader() {
+    var loggedIn = !!(me && (obj(DB.members)[me] || {}).claimed);
     $("#app-header").innerHTML =
       '<div class="hd-brand"><span class="hd-brand-emoji">🤙</span>' +
       '<div><div class="hd-title">슈퍼리치키드</div><div class="hd-sub">우리들의 세션</div></div></div>' +
-      '<button class="me-chip" data-action="open-profile">' + avatar(me, 24) + "<span>" + esc(memberName(me)) + "</span></button>";
+      (loggedIn ? '<button class="me-chip" data-action="open-profile">' + avatar(me, 24) + "<span>" + esc(memberName(me)) + "</span></button>" : "");
   }
   function renderNav() {
     var tabs = [["home", "home", "홈"], ["alert", "megaphone", "알림"], ["carpool", "car", "카풀"], ["photo", "camera", "앨범"], ["my", "user", "마이"]];
@@ -479,7 +480,9 @@
   }
   function gateName() {
     var roster = CFG.roster || [];
-    return '<div class="gate-card"><div class="gate-emoji">' + icon("mountain", 48) + '</div>' +
+    return '<div class="gate-card">' +
+      '<button class="gate-back" data-action="go-hub" aria-label="세션 목록으로">' + icon("back", 18) + "<span>세션 목록</span></button>" +
+      '<div class="gate-emoji">' + icon("mountain", 48) + '</div>' +
       "<h1>" + esc((CFG.trip || {}).title || "MT") + "</h1>" +
       '<div class="steps"><span class="step-dot on"></span><span class="step-dot"></span></div>' +
       '<p class="gate-p">본인 이름을 선택하세요. 4자리 인증번호로 입장합니다.<br>어느 기기에서든 같은 인증번호로 들어올 수 있어요.</p>' +
