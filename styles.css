@@ -4,45 +4,89 @@
    레이아웃: 모바일 퍼스트 + PC 반응형(사이드바)
    ============================================================ */
 :root {
-  /* ─ 컬러 토큰 (라이트) · SRK 브랜드: 레드·옐로·그린·블랙/크림 ─ */
-  --bg: #f4f1ea;          /* 크림 */
-  --surface: #ffffff;
-  --ink: #1a1613;         /* 웜 블랙 */
-  --muted: #76706a;
-  --line: #e9e4da;
-  --pri: #e5302a;         /* SRK 레드 (primary) */
-  --pri-d: #bd1d18;
-  --green: #2fa85a;       /* 그린 포인트 */
-  --yellow: #f6c200;      /* 옐로 포인트 */
-  --pos: #1f9d4d;
-  --neg: #e5302a;
-  --warn: #e08a00;
-  --shadow: none;   /* 플랫 디자인 — elevation 제거, 분리는 border(--line)로 */
-  /* ─ 스페이싱: 4px 그리드 (atomic) ─ */
-  --s-1: 4px;  --s-2: 8px;  --s-3: 12px; --s-4: 16px;
-  --s-5: 20px; --s-6: 24px; --s-8: 32px; --s-10: 40px;
-  /* ─ 라운드: 4px 그리드 ─ */
-  --r-1: 8px; --r-2: 12px; --r-3: 16px; --r-4: 20px; --r-pill: 999px;
-  --radius: 16px;
-  --maxw: 540px;
-  --nav-h: 64px;
-  font-family: "Pretendard Variable", Pretendard, -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Malgun Gothic", system-ui, sans-serif;
+  /* ============================================================
+     Cobalt — Mono 디자인 시스템 (Greencar-UXD/design-system) 적용
+     · 구조(중립 cool 램프 · 시맨틱 토큰 · 4px 스케일 · 그림자 · 타이포)는 코발트 그대로
+     · 단일 액센트만 SRK 브랜드 레드로 치환 (코발트 블루 → SRK 레드)
+     ============================================================ */
+  /* ---- Neutral ramp (cool gray) ---- */
+  --gray-0:#ffffff; --gray-50:#f7f8f9; --gray-100:#eceef1; --gray-200:#dde0e5;
+  --gray-300:#c5cad1; --gray-400:#9aa1ab; --gray-500:#6b727d; --gray-600:#4d535d;
+  --gray-700:#383d45; --gray-800:#24282e; --gray-900:#14171b; --gray-950:#0c0e11;
+  /* ---- Accent ramp = SRK 레드 (코발트 램프 자리 대체) ---- */
+  --red-50:#fdecea; --red-100:#fbd9d6; --red-200:#f6ada6; --red-300:#f07d74;
+  --red-400:#ec534a; --red-500:#e5302a; --red-600:#c5251f; --red-700:#a11d18;
+  --red-800:#7d1813; --red-900:#5f120f;
+  /* 코발트 블루 — 보조 포인트(잠금 태그 등) */
+  --cobalt-500:#2d5bff; --cobalt-600:#2447e0;
+  /* ---- Status ---- */
+  --success-500:#0fa968; --success-600:#0c8a54; --success-50:#e2f6ed;
+  --warning-500:#d9870b; --warning-600:#b56e08; --warning-50:#fbf2df;
+  --danger-500:#e0433a; --danger-600:#c5352d; --danger-50:#fbe9e8;
+
+  /* ===== Semantic — LIGHT ===== */
+  --text-primary:var(--gray-900); --text-secondary:var(--gray-600); --text-tertiary:var(--gray-400); --text-inverse:var(--gray-0);
+  --text-link:var(--red-600); --text-accent:var(--red-600);
+  --surface-page:var(--gray-50); --surface-card:var(--gray-0); --surface-sunken:var(--gray-100);
+  --surface-raised:var(--gray-0); --surface-inverse:var(--gray-900); --surface-accent-subtle:var(--red-50);
+  --border:var(--gray-200); --border-strong:var(--gray-300); --border-accent:var(--red-500);
+  --accent:var(--red-500); --accent-hover:var(--red-600); --on-accent:var(--gray-0); --focus-ring:var(--red-500);
+  --action-primary-bg:var(--gray-900); --action-primary-bg-hover:var(--gray-800); --action-primary-fg:var(--gray-0);
+  --info-50:var(--red-50);
+
+  /* ---- Spacing · radius · shadow · motion (4px grid) ---- */
+  --space-1:4px; --space-2:8px; --space-3:12px; --space-4:16px; --space-5:20px; --space-6:24px; --space-8:32px; --space-10:40px;
+  --radius-xs:4px; --radius-sm:8px; --radius-md:12px; --radius-lg:16px; --radius-xl:20px; --radius-2xl:28px; --radius-pill:999px;
+  --shadow-xs:0 1px 2px rgba(16,18,29,.05);
+  --shadow-sm:0 1px 2px rgba(16,18,29,.06), 0 1px 3px rgba(16,18,29,.04);
+  --shadow-md:0 2px 4px rgba(16,18,29,.05), 0 8px 16px -8px rgba(16,18,29,.12);
+  --shadow-lg:0 4px 8px rgba(16,18,29,.05), 0 20px 40px -16px rgba(16,18,29,.18);
+  --shadow-xl:0 8px 16px rgba(16,18,29,.06), 0 32px 64px -24px rgba(16,18,29,.24);
+  --ease-out:cubic-bezier(.2,.8,.2,1);
+
+  /* ---- Type families ---- */
+  --font-text:"Pretendard Variable", Pretendard, -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Malgun Gothic", system-ui, sans-serif;
+  --font-mono:"Geist Mono", ui-monospace, "SFMono-Regular", "JetBrains Mono", "D2Coding", monospace;
+
+  /* ---- 레거시 별칭 (기존 컴포넌트 규칙이 그대로 동작하도록 코발트 토큰에 매핑) ---- */
+  --bg:var(--surface-page); --surface:var(--surface-card);
+  --ink:var(--text-primary); --muted:var(--text-secondary); --line:var(--border);
+  --pri:var(--accent); --pri-d:var(--accent-hover);
+  --green:var(--success-500); --yellow:var(--warning-500);
+  --pos:var(--success-600); --neg:var(--danger-500); --warn:var(--warning-600); --blue:var(--cobalt-500);
+  --shadow:var(--shadow-sm);
+  --s-1:var(--space-1); --s-2:var(--space-2); --s-3:var(--space-3); --s-4:var(--space-4);
+  --s-5:var(--space-5); --s-6:var(--space-6); --s-8:var(--space-8); --s-10:var(--space-10);
+  --r-1:var(--radius-sm); --r-2:var(--radius-md); --r-3:var(--radius-lg); --r-4:var(--radius-xl); --r-pill:var(--radius-pill);
+  --radius:var(--radius-lg);
+  --maxw:540px; --nav-h:64px;
+  color-scheme: light dark;
+  font-family: var(--font-text);
 }
-/* ─ 다크 토큰 (재사용용 변수 묶음) ─ */
+/* ===== Semantic — DARK (코발트 다크 매핑, 액센트=SRK 레드 라이트닝) ===== */
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme]) {
-    --bg: #14110f; --surface: #1e1a17; --ink: #f4f1ec; --muted: #9c948c;
-    --line: #2c2723; --shadow: none;
-    --pri: #ff453c; --pri-d: #e5302a;
+    --text-primary:#f3f4f6; --text-secondary:#9aa1ab; --text-tertiary:#6b727d; --text-inverse:var(--gray-900);
+    --text-link:#ff8077; --text-accent:#ff8077;
+    --surface-page:#0d0f12; --surface-card:#16181d; --surface-sunken:#1d2025; --surface-raised:#1d2025;
+    --surface-inverse:var(--gray-50); --surface-accent-subtle:#3a1714;
+    --border:#262a30; --border-strong:#343943; --border-accent:#ff5a4d;
+    --accent:#ff5a4d; --accent-hover:#ff8077; --on-accent:#0d0f12; --focus-ring:#ff5a4d;
+    --action-primary-bg:#f3f4f6; --action-primary-bg-hover:#ffffff; --action-primary-fg:#0d0f12;
+    --info-50:#3a1714; --success-50:#0e2d20; --warning-50:#2e2410; --danger-50:#371613;
   }
 }
 :root[data-theme="dark"] {
-  --bg: #14110f; --surface: #1e1a17; --ink: #f4f1ec; --muted: #9c948c;
-  --line: #2c2723; --shadow: none;
-  --pri: #ff453c; --pri-d: #e5302a;
+  --text-primary:#f3f4f6; --text-secondary:#9aa1ab; --text-tertiary:#6b727d; --text-inverse:var(--gray-900);
+  --text-link:#ff8077; --text-accent:#ff8077;
+  --surface-page:#0d0f12; --surface-card:#16181d; --surface-sunken:#1d2025; --surface-raised:#1d2025;
+  --surface-inverse:var(--gray-50); --surface-accent-subtle:#3a1714;
+  --border:#262a30; --border-strong:#343943; --border-accent:#ff5a4d;
+  --accent:#ff5a4d; --accent-hover:#ff8077; --on-accent:#0d0f12; --focus-ring:#ff5a4d;
+  --action-primary-bg:#f3f4f6; --action-primary-bg-hover:#ffffff; --action-primary-fg:#0d0f12;
+  --info-50:#3a1714; --success-50:#0e2d20; --warning-50:#2e2410; --danger-50:#371613;
 }
-/* data-theme="light"는 :root 기본(라이트) 사용 — OS가 다크여도 라이트 강제됨 */
-:root { color-scheme: light dark; }
+/* data-theme="light"는 :root 기본(라이트) 사용 */
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 html, body { margin: 0; padding: 0; }
 body {
@@ -616,3 +660,19 @@ h1, h2 { margin: 0; }
 @media (min-width: 880px) {
   .cmt-input { bottom: 0; }
 }
+
+
+/* ============================================================
+   Cobalt — Mono 컴포넌트 정합 (구조 차용 · 액센트=SRK 레드)
+   토큰 스왑 위에 코발트 컴포넌트 해부(elevation·radius·데이터 타이포)를 덧입힘.
+   ============================================================ */
+.card { box-shadow: var(--shadow-sm); border-radius: var(--radius-xl); }
+.stat { box-shadow: var(--shadow-xs); border-radius: var(--radius-lg); }
+.seg-b.on { box-shadow: var(--shadow-xs); }
+.btn-line { border-color: var(--border-strong); }
+.modal { box-shadow: var(--shadow-xl); }
+.me-chip { box-shadow: var(--shadow-xs); }
+/* 데이터 타이포: 카운트·D-day는 Geist Mono / 숫자는 tabular */
+.stat-n { font-variant-numeric: tabular-nums; }
+.hero-dday { font-family: var(--font-mono); font-weight: 600; letter-spacing: 0; }
+.sc-badge, .sih-badge { font-variant-numeric: tabular-nums; }
