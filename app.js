@@ -570,7 +570,7 @@
       "</div>" +
       (s.summary ? '<div class="sc-summary">' + esc(s.summary) + "</div>" : "") +
       '<div class="sc-foot"><span class="sc-tag ' + (isApp ? "live" : "info") + '">' + (isApp ? "실시간 앱" : "일정 정보") + '</span><span class="sc-go">' + (isApp ? "입장" : "자세히") + " ›</span></div>" +
-      (canDel ? '<button class="sc-del" data-action="del-session" data-id="' + esc(s.id) + '" aria-label="세션 삭제">×</button>' : "") +
+      "" +
       "</div>";
   }
 
@@ -603,28 +603,32 @@
   }
 
   /* 세션 추가 폼 (운영진) */
-  function formAddSession() {
+  function formAddSession(editId) {
     if (!isMeAdmin()) return;
-    var emojis = ["🏖️", "🧗", "⛺", "🏔️", "🎿", "🏕️", "🍻", "🎉", "🚗", "🌊", "🍁", "❄️"];
-    var accents = [["red", "레드"], ["blue", "블루"], ["green", "그린"], ["purple", "퍼플"], ["orange", "오렌지"]];
-    openModal("<h2>세션 추가하기</h2>" +
-      '<p class="pf-note" style="margin:0 0 12px">새 세션을 추가해요. 추가하면 홈·정산·카풀·앨범·준비물이 있는 실시간 세션으로 열려요.</p>' +
-      '<label>이모지</label><div class="emoji-pick" id="f-emoji-wrap">' +
-        emojis.map(function (e, i) { return '<button type="button" class="emoji-b' + (i === 0 ? " on" : "") + '" data-action="pick-emoji" data-e="' + e + '">' + e + "</button>"; }).join("") +
-        '<input type="hidden" id="f-emoji" value="' + emojis[0] + '"></div>' +
-      '<label>제목</label><input id="f-stitle" placeholder="예: 슈퍼리치키드 동계 MT">' +
-      '<label>한 줄 설명 (선택)</label><input id="f-ssub" placeholder="예: 스키 + 온천">' +
-      '<div class="row2"><div><label>시작일</label><input id="f-sstart" type="date"></div>' +
-      '<div><label>종료일</label><input id="f-send" type="date"></div></div>' +
-      '<label>장소 (선택)</label><input id="f-sloc" placeholder="예: 비발디파크">' +
-      '<label>숙소 (선택)</label><input id="f-slodge" placeholder="예: 소노벨 비발디파크">' +
-      '<label>색상</label><div class="seg">' + accents.map(function (a, i) { return '<button type="button" class="seg-b' + (i === 0 ? " on" : "") + '" data-action="pick-accent" data-a="' + a[0] + '">' + a[1] + "</button>"; }).join("") + '<input type="hidden" id="f-saccent" value="red"></div>' +
-      '<label>참가 크루원</label><p class="pf-note" style="margin:0 0 8px">이 세션에 참가할 사람만 골라요. 정산·카풀·투표가 선택한 사람 기준으로 구성돼요.</p>' +
-      '<div class="part-grid">' + (CFG.roster || []).map(function (m) { return '<label class="pchk"><input type="checkbox" class="f-sess-part" value="' + m.id + '" checked>' + avatar(m.id, 24) + "<span>" + esc(m.name) + "</span></label>"; }).join("") + '</div>' +
-      '<div class="modal-foot"><button class="btn-line" data-action="close-modal">취소</button><button class="btn-pri" data-action="save-session">추가</button></div>');
+    var ed = editId ? sessionById(editId) : null;
+    var emojis = ["\uD83C\uDFD6\uFE0F", "\uD83E\uDDD7", "\u26FA", "\uD83C\uDFD4\uFE0F", "\uD83C\uDFBF", "\uD83C\uDFD5\uFE0F", "\uD83C\uDF7B", "\uD83C\uDF89", "\uD83D\uDE97", "\uD83C\uDF0A", "\uD83C\uDF41", "\u2744\uFE0F"];
+    var accents = [["red", "\uB808\uB4DC"], ["blue", "\uBE14\uB8E8"], ["green", "\uADF8\uB9B0"], ["purple", "\uD37C\uD50C"], ["orange", "\uC624\uB80C\uC9C0"]];
+    var curEmoji = ed && ed.emoji ? ed.emoji : emojis[0], curAcc = ed && ed.accent ? ed.accent : "red";
+    if (emojis.indexOf(curEmoji) < 0) emojis.unshift(curEmoji);
+    var sparts = ed ? obj(DB.participants) : null;
+    var spOn = function (mid) { return ed ? (sparts && Object.keys(sparts).length ? !!sparts[mid] : true) : true; };
+    openModal("<h2>" + (ed ? "\uC138\uC158 \uC218\uC815" : "\uC138\uC158 \uCD94\uAC00\uD558\uAE30") + "</h2>" +
+      '<p class="pf-note" style="margin:0 0 12px">' + (ed ? "\uC138\uC158 \uC815\uBCF4\uB97C \uC218\uC815\uD574\uC694." : "\uC0C8 \uC138\uC158\uC744 \uCD94\uAC00\uD574\uC694. \uCD94\uAC00\uD558\uBA74 \uD648\u00B7\uC815\uC0B0\u00B7\uCE74\uD480\u00B7\uC568\uBC94\u00B7\uC900\uBE44\uBB3C\uC774 \uC788\uB294 \uC2E4\uC2DC\uAC04 \uC138\uC158\uC73C\uB85C \uC5F4\uB824\uC694.") + '</p>' +
+      '<label>\uC774\uBAA8\uC9C0</label><div class="emoji-pick" id="f-emoji-wrap">' +
+        emojis.map(function (e) { return '<button type="button" class="emoji-b' + (e === curEmoji ? " on" : "") + '" data-action="pick-emoji" data-e="' + e + '">' + e + "</button>"; }).join("") +
+        '<input type="hidden" id="f-emoji" value="' + esc(curEmoji) + '"></div>' +
+      '<label>\uC81C\uBAA9</label><input id="f-stitle" placeholder="\uC608: \uC288\uD37C\uB9AC\uCE58\uD0A4\uB4DC \uB3D9\uACC4 MT" value="' + (ed ? esc(ed.title || "") : "") + '">' +
+      '<label>\uD55C \uC904 \uC124\uBA85 (\uC120\uD0DD)</label><input id="f-ssub" placeholder="\uC608: \uC2A4\uD0A4 + \uC628\uCC9C" value="' + (ed ? esc(ed.subtitle || "") : "") + '">' +
+      '<div class="row2"><div><label>\uC2DC\uC791\uC77C</label><input id="f-sstart" type="date" value="' + (ed ? esc(ed.startDate || "") : "") + '"></div>' +
+      '<div><label>\uC885\uB8CC\uC77C</label><input id="f-send" type="date" value="' + (ed ? esc(ed.endDate || "") : "") + '"></div></div>' +
+      '<label>\uC7A5\uC18C (\uC120\uD0DD)</label><input id="f-sloc" placeholder="\uC608: \uBE44\uBC1C\uB514\uD30C\uD06C" value="' + (ed ? esc(ed.location || "") : "") + '">' +
+      '<label>\uC219\uC18C (\uC120\uD0DD)</label><input id="f-slodge" placeholder="\uC608: \uC18C\uB178\uBCA8 \uBE44\uBC1C\uB514\uD30C\uD06C" value="' + (ed ? esc(ed.lodging || "") : "") + '">' +
+      '<label>\uC0C9\uC0C1</label><div class="seg">' + accents.map(function (a) { return '<button type="button" class="seg-b' + (a[0] === curAcc ? " on" : "") + '" data-action="pick-accent" data-a="' + a[0] + '">' + a[1] + "</button>"; }).join("") + '<input type="hidden" id="f-saccent" value="' + esc(curAcc) + '"></div>' +
+      '<label>\uCC38\uAC00 \uD06C\uB8E8\uC6D0 <button class="mini" data-action="sess-part-all">\uC804\uCCB4</button><button class="mini" data-action="sess-part-none">\uD574\uC81C</button></label>' +
+      '<p class="pf-note" style="margin:0 0 8px">\uC774 \uC138\uC158\uC5D0 \uCC38\uAC00\uD560 \uC0AC\uB78C\uB9CC \uACE8\uB77C\uC694. \uC815\uC0B0\u00B7\uCE74\uD480\u00B7\uD22C\uD45C\uAC00 \uC120\uD0DD\uD55C \uC0AC\uB78C \uAE30\uC900\uC73C\uB85C \uAD6C\uC131\uB3FC\uC694.</p>' +
+      '<div class="part-grid">' + (CFG.roster || []).map(function (m) { return '<label class="pchk"><input type="checkbox" class="f-sess-part" value="' + m.id + '"' + (spOn(m.id) ? " checked" : "") + ">" + avatar(m.id, 24) + "<span>" + esc(m.name) + "</span></label>"; }).join("") + '</div>' +
+      '<div class="modal-foot"><button class="btn-line" data-action="close-modal">\uCDE8\uC18C</button><button class="btn-pri" data-action="save-session"' + (ed ? ' data-edit="' + esc(editId) + '"' : "") + '>' + (ed ? "\uC800\uC7A5" : "\uCD94\uAC00") + "</button></div>");
   }
-
-  /* ---------- 홈 ---------- */
   function viewHome() {
     var t = tripMeta();
     var openPolls = entries(DB.polls).filter(function (kv) { return (kv[1] || {}).status !== "closed"; });
@@ -805,6 +809,7 @@
 
     h += myCarSection();
 
+    if (isMeAdmin() && currentSession() && currentSession()._user) { var csm = currentSession(); h += '<div class="card"><h2 class="sec" style="margin:0 0 12px">\uC138\uC158 \uAD00\uB9AC</h2><button class="btn-line btn-block" data-action="edit-session" data-id="' + esc(csm.id) + '">\uC138\uC158 \uC815\uBCF4 \uC218\uC815</button><button class="link-danger" data-action="del-session" data-id="' + esc(csm.id) + '" style="display:block;width:100%;text-align:center;margin-top:12px">\uC138\uC158 \uC0AD\uC81C</button></div>'; }
     h += '<div style="height:6px"></div>' + prepPacking();
     return h;
   }
@@ -1228,29 +1233,40 @@
       render(); return;
     }
     if (a === "add-session") { formAddSession(); return; }
+    if (a === "edit-session") { formAddSession(t.getAttribute("data-id")); return; }
+    if (a === "sess-part-all") { ev.preventDefault(); document.querySelectorAll(".f-sess-part").forEach(function (c) { c.checked = true; }); return; }
+    if (a === "sess-part-none") { ev.preventDefault(); document.querySelectorAll(".f-sess-part").forEach(function (c) { c.checked = false; }); return; }
     if (a === "pick-emoji") { var em = t.getAttribute("data-e"); var ew = $("#f-emoji"); if (ew) ew.value = em; Array.prototype.forEach.call(document.querySelectorAll("#f-emoji-wrap .emoji-b"), function (b) { b.classList.toggle("on", b.getAttribute("data-e") === em); }); return; }
     if (a === "pick-accent") { var ac = t.getAttribute("data-a"); var aw = $("#f-saccent"); if (aw) aw.value = ac; Array.prototype.forEach.call(t.parentNode.querySelectorAll(".seg-b"), function (b) { b.classList.toggle("on", b.getAttribute("data-a") === ac); }); return; }
     if (a === "save-session") {
       if (!isMeAdmin()) return;
+      var seditId = t.getAttribute("data-edit");
       var stitle = clampStr(($("#f-stitle") || {}).value, 60);
       if (!stitle) { alert("세션 제목을 입력해주세요."); return; }
-      var sd = ($("#f-sstart") || {}).value || "", ed = ($("#f-send") || {}).value || "";
-      var skey = Store.push("sessions", {
-        kind: "app", emoji: ($("#f-emoji") || {}).value || "📌", accent: ($("#f-saccent") || {}).value || "red",
+      var sd = ($("#f-sstart") || {}).value || "", sed = ($("#f-send") || {}).value || "";
+      var sdata = {
+        emoji: ($("#f-emoji") || {}).value || "📌", accent: ($("#f-saccent") || {}).value || "red",
         title: stitle, subtitle: clampStr(($("#f-ssub") || {}).value, 40),
-        startDate: sd, endDate: ed || sd,
-        location: clampStr(($("#f-sloc") || {}).value, 60), lodging: clampStr(($("#f-slodge") || {}).value, 60),
-        by: me || null, ts: Date.now()
-      });
+        startDate: sd, endDate: sed || sd,
+        location: clampStr(($("#f-sloc") || {}).value, 60), lodging: clampStr(($("#f-slodge") || {}).value, 60)
+      };
       var spchecks = Array.prototype.slice.call(document.querySelectorAll(".f-sess-part:checked")).map(function (c) { return c.value; });
-      if (spchecks.length && skey) { var spmap = {}; spchecks.forEach(function (id) { spmap[id] = true; }); RawStore.set("s/db:" + skey + "/participants", spmap); }
+      var spmap = {}; spchecks.forEach(function (id) { spmap[id] = true; });
+      if (seditId && seditId.indexOf("db:") === 0) {
+        Store.update("sessions/" + seditId.slice(3), sdata);
+        if (spchecks.length) RawStore.set("s/" + seditId + "/participants", spmap);
+        closeModal(); render(); return;
+      }
+      sdata.kind = "app"; sdata.by = me || null; sdata.ts = Date.now();
+      var skey = Store.push("sessions", sdata);
+      if (spchecks.length && skey) RawStore.set("s/db:" + skey + "/participants", spmap);
       closeModal(); render(); return;
     }
     if (a === "del-session") {
       if (!isMeAdmin()) return;
       var dsid = t.getAttribute("data-id"); if (!dsid || dsid.indexOf("db:") !== 0) return;
       var dso = sessionById(dsid), dsTitle = (dso && dso.title) || "이 세션";
-      if (confirm("\u2018" + dsTitle + "\u2019을(를) 삭제하면 이 세션의 공지·일정·투표·지출/정산·앨범이 모두 사라지고 되돌릴 수 없어요. 정말 삭제할까요?")) { Store.remove("sessions/" + dsid.slice(3)); RawStore.remove("s/" + dsid); render(); }
+      if (confirm("\u2018" + dsTitle + "\u2019을(를) 삭제하면 이 세션의 공지·일정·투표·지출/정산·앨범이 모두 사라지고 되돌릴 수 없어요. 정말 삭제할까요?")) { Store.remove("sessions/" + dsid.slice(3)); RawStore.remove("s/" + dsid); state.screen = "hub"; state.pollId = null; render(); }
       return;
     }
 

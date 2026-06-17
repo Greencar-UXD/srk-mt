@@ -611,7 +611,7 @@ h1, h2 { margin: 0; }
    ============================================================ */
 @media (min-width: 880px) {
   #app {
-    max-width: 1240px; margin-inline: auto; display: grid; gap: 0 32px;
+    max-width: 1200px; margin-inline: auto; display: grid; gap: 0 32px;
     grid-template-columns: 220px minmax(0, 1fr);
     grid-template-areas: "header header" "nav main";
     padding: 0 32px;
@@ -721,3 +721,18 @@ input:focus-visible, select:focus-visible, textarea:focus-visible {
 .seg-b { min-height: 44px; }
 .ms-onsite { color: var(--warn); font-weight: 700; }
 .exp-mine { color: var(--ink); font-weight: 700; }
+
+
+/* ============================================================
+   PC 반응형 정비 — design-system(Greencar-UXD) tokens/layout.css 반영
+   breakpoints 480/768/1024/1280 · container-max 1200 · 모바일퍼스트 그리드
+   ============================================================ */
+:root { --bp-sm: 480px; --bp-md: 768px; --bp-lg: 1024px; --bp-xl: 1280px; --container-max: 1200px; --gutter: 16px; --gutter-md: 24px; --gutter-lg: 32px; }
+@media (min-width: 880px) {
+  /* 허브: 760px 좁은 칼럼 → 컨테이너 풀폭으로 (세션 카드가 3열 그리드로 채워짐) */
+  .hub-wrap { max-width: none; }
+  .hub-head { max-width: var(--container-max); }
+  .sess-grid { grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 16px; }
+  /* 읽기용 상세는 가독 폭 유지 */
+  .sinfo { max-width: 760px; }
+}
