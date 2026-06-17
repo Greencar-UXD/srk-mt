@@ -99,7 +99,10 @@
       link: '<path d="M9.5 14.5l5-5"/><path d="M11.5 7.5l1.2-1.2a3.6 3.6 0 0 1 5 5L17.5 12.5"/><path d="M12.5 16.5l-1.2 1.2a3.6 3.6 0 0 1-5-5L7.5 11.5"/>',
       check: '<path d="M5 12.5l4.5 4.5L19 7"/>',
       back: '<path d="M14.5 5.5 8 12l6.5 6.5"/>',
-      mountain: '<path d="M3 19h18L14 6l-4 7-2.5-3L3 19z"/><path d="M14 6l3.5 6"/>'
+      mountain: '<path d="M3 19h18L14 6l-4 7-2.5-3L3 19z"/><path d="M14 6l3.5 6"/>',
+      play: '<path d="M7 5l11 7-11 7z"/>',
+      download: '<path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 21h14"/>',
+      expand: '<path d="M15 3h6v6"/><path d="M9 21H3v-6"/><path d="M21 3l-7 7"/><path d="M3 21l7-7"/>'
     };
     return '<svg class="ic" width="' + size + '" height="' + size + '" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + (P[name] || "") + "</svg>";
   }
@@ -910,16 +913,16 @@
     var allSel = photos.length > 0 && sel.length === photos.length;
     h += '<div class="ph-bar"><label class="ph-all"><input type="checkbox" data-action="ph-all"' + (allSel ? " checked" : "") + "> 전체 선택</label>" +
       '<span class="ph-cnt">' + (sel.length ? sel.length + "장 선택" : photos.length + "장") + "</span>" +
-      (sel.length ? '<button class="link-danger sm" data-action="ph-del">삭제</button><button class="btn-pri sm" data-action="ph-download">⬇ 다운로드 ' + sel.length + "</button>" : "") + "</div>";
+      (sel.length ? '<button class="link-danger sm" data-action="ph-del">삭제</button><button class="btn-pri sm" data-action="ph-download">' + icon("download", 14) + ' 다운로드 ' + sel.length + "</button>" : "") + "</div>";
     if (!photos.length) { h += '<div class="empty">아직 올라온 게 없어요.<br>오른쪽 위 <b>+ 올리기</b>로 사진·영상을 모아봐요!</div>'; return h; }
     h += '<div class="ph-grid">';
     photos.forEach(function (kv) {
       var p = kv[1], on = !!photoSel[kv[0]], isVid = p.resourceType === "video";
       h += '<div class="ph-cell' + (on ? " sel" : "") + '" data-action="ph-toggle" data-id="' + kv[0] + '">' +
         '<img loading="lazy" src="' + esc(mediaThumb(p)) + '" alt="">' +
-        (isVid ? '<span class="ph-vid">▶</span>' : "") +
+        (isVid ? '<span class="ph-vid">' + icon("play", 13) + '</span>' : "") +
         '<span class="ph-check">' + (on ? "✓" : "") + "</span>" +
-        '<a class="ph-open" href="' + esc(p.url) + '" target="_blank" rel="noopener" data-action="ph-open" title="원본 보기">⤢</a>' +
+        '<a class="ph-open" href="' + esc(p.url) + '" target="_blank" rel="noopener" data-action="ph-open" title="원본 보기">' + icon("expand", 14) + '</a>' +
         "</div>";
     });
     h += "</div>";
@@ -1273,8 +1276,8 @@
     }
 
     /* 투표 */
-    if (a === "open-poll") { state.tab = "alert"; state.alert = "vote"; state.pollId = t.getAttribute("data-id"); render(); return; }
-    if (a === "back-vote") { state.pollId = null; render(); return; }
+    if (a === "open-poll") { state.pollFrom = state.tab; state.tab = "alert"; state.alert = "vote"; state.pollId = t.getAttribute("data-id"); render(); return; }
+    if (a === "back-vote") { state.pollId = null; if (state.pollFrom === "home") state.tab = "home"; state.pollFrom = null; render(); return; }
     if (a === "vote") { ev.stopPropagation(); if (t.getAttribute("data-busy")) return; t.setAttribute("data-busy", "1"); t.classList.add("opt-busy"); doVote(t.getAttribute("data-poll"), t.getAttribute("data-opt")); return; }
     if (a === "new-poll") { if (isMeAdmin()) formNewPoll(); return; }
     if (a === "add-opt-field") { $("#f-opts").insertAdjacentHTML("beforeend", optInput("")); return; }
