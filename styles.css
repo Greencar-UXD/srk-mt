@@ -720,3 +720,4 @@ input:focus-visible, select:focus-visible, textarea:focus-visible {
 /* sev2 폴리시 — 세그먼트 44px · 현장 별도 결제 라벨 */
 .seg-b { min-height: 44px; }
 .ms-onsite { color: var(--warn); font-weight: 700; }
+.exp-mine { color: var(--ink); font-weight: 700; }

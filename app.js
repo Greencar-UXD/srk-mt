@@ -164,6 +164,8 @@
   /* ============================================================
      스토어 (Firebase | 데모)
      ============================================================ */
+  var _lastWErr = 0;
+  function onWriteError(e) { try { console.warn("write fail", e); } catch (_) {} var n = Date.now(); if (n - _lastWErr < 4000) return; _lastWErr = n; try { alert("저장에 실패했어요. 인터넷 연결을 확인하고 다시 시도해 주세요."); } catch (_) {} }
   var Store = (function () {
     var fb = CFG.firebase || {};
     var useCloud = !!(fb.apiKey && fb.databaseURL && window.firebase);
@@ -174,10 +176,10 @@
       return {
         mode: "cloud",
         onRoot: function (cb) { db.ref("/").on("value", function (s) { cb(s.val() || {}); }); },
-        set: function (p, v) { return db.ref(p).set(v); },
-        update: function (p, v) { return db.ref(p).update(v); },
-        push: function (p, v) { var r = db.ref(p).push(); r.set(v); return r.key; },
-        remove: function (p) { return db.ref(p).remove(); },
+        set: function (p, v) { return db.ref(p).set(v).catch(onWriteError); },
+        update: function (p, v) { return db.ref(p).update(v).catch(onWriteError); },
+        push: function (p, v) { var r = db.ref(p).push(); r.set(v).catch(onWriteError); return r.key; },
+        remove: function (p) { return db.ref(p).remove().catch(onWriteError); },
         tx: function (p, fn) { return db.ref(p).transaction(fn).then(function (r) { return r.committed; }); },
         seedRoot: function (builder) { db.ref("/").transaction(function (cur) { if (cur && cur.members && Object.keys(cur.members).length) return; return builder(); }); }
       };
@@ -776,7 +778,7 @@
       var e = kv[1], n = e.participantsAll ? memberCount() : (e.participants ? Object.keys(e.participants).length : memberCount());
       var per = e.splitType === "custom" ? "항목별" : won(Math.round((Number(e.amount) || 0) / (n || 1))) + " / 인";
       h += '<div class="card exp" data-action="edit-expense" data-id="' + kv[0] + '"><div class="exp-top"><span class="exp-title">' + esc(e.title) + "</span><span class=\"exp-amt\">" + won(e.amount) + "</span></div>" +
-        '<div class="exp-meta">' + (e.category ? '<span class="cat">' + esc(e.category) + "</span>" : "") + " 결제 " + chip(e.payer) + " · " + n + "명 · " + per + "</div>" + (e.note ? '<div class="exp-note">' + esc(e.note) + "</div>" : "") + "</div>";
+        '<div class="exp-meta">' + (e.category ? '<span class="cat">' + esc(e.category) + "</span>" : "") + " 결제 " + chip(e.payer) + " · " + n + "명 · " + per + (expandShares(e)[me] ? ' · <span class="exp-mine">내 몫 ' + won(expandShares(e)[me]) + "</span>" : "") + "</div>" + (e.note ? '<div class="exp-note">' + esc(e.note) + "</div>" : "") + "</div>";
     });
     h += "</div>";
     return h;
@@ -1310,7 +1312,7 @@
 
     /* 카풀 */
     if (a === "ride-pick") { var pp1 = t.getAttribute("data-p"); if (!(pp1 === me || isMeAdmin())) return; chooserModal("어느 차에 탈까요? (정원 " + carCap() + "명)", drivers().filter(function (d) { return !carFull(d); }), pp1, "pick-driver"); window.__ridePass = pp1; return; }
-    if (a === "pick-driver") { var d1 = t.getAttribute("data-id"); var pass = window.__ridePass; if (carFull(d1)) { alert("이 차는 정원(" + carCap() + "명)이 꽉 찼어요."); closeModal(); return; } if (pass && isValidDriver(d1)) { Store.set(rideWritePath(pass), d1); notify(d1, memberName(pass) + "님이 " + memberName(d1) + "님 차에 탔어요.", "ride"); } closeModal(); return; }
+    if (a === "pick-driver") { var d1 = t.getAttribute("data-id"); var pass = window.__ridePass; if (carFull(d1)) { chooserModal("방금 다른 분이 먼저 탔어요 — 남은 차에서 다시 골라주세요", drivers().filter(function (d) { return !carFull(d); }), pass || me, "pick-driver"); return; } if (pass && isValidDriver(d1)) { Store.set(rideWritePath(pass), d1); notify(d1, memberName(pass) + "님이 " + memberName(d1) + "님 차에 탔어요.", "ride"); } closeModal(); return; }
     if (a === "ride-leave") { var pp2 = t.getAttribute("data-p"); if (!(pp2 === me || (rideOf(pp2) === me) || isMeAdmin())) return; if (pp2 !== me && !confirm(memberName(pp2) + "님을 이 차에서 내릴까요?")) return; Store.set(rideWritePath(pp2), null); return; }
     if (a === "recruit") { var d2 = t.getAttribute("data-d"); if (!(d2 === me || isMeAdmin())) return; chooserModal("주변 탑승자 모집 — 누구를 태울까요?", unassignedPass(), d2, "assign-pass", d2); return; }
     if (a === "assign-pass") { var pid3 = t.getAttribute("data-id"), d3 = t.getAttribute("data-d"); if (carFull(d3)) { alert("이 차는 정원(" + carCap() + "명)이 꽉 찼어요."); closeModal(); return; } if (isValidDriver(d3)) { Store.set(rideWritePath(pid3), d3); notify(pid3, memberName(d3) + "님 차에 배정됐어요.", "ride"); } closeModal(); return; }
