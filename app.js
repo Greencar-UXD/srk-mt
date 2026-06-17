@@ -15,7 +15,7 @@
   var me = localStorage.getItem("srk_me") || null;
   var MYTOKEN = localStorage.getItem("srk_token") || ("t" + Date.now().toString(36) + Math.random().toString(36).slice(2, 8));
   localStorage.setItem("srk_token", MYTOKEN);
-  var state = { screen: "hub", sessionId: "summer-mt", tab: "home", pollId: null, alert: "notice" };
+  var state = { screen: "clubs", clubId: null, sessionId: "summer-mt", tab: "home", pollId: null, alert: "notice" };
   var viewHist = [], lastSig = null, backing = false; // 뒤로가기용 화면 히스토리
   var intro = { step: "name", pick: null, car: false };
   var booted = false;
@@ -153,6 +153,11 @@
     var found = null; (CFG.sessions || []).forEach(function (x) { if (x.id === id) found = x; }); return found;
   }
   function currentSession() { return sessionById(state.sessionId) || (CFG.sessions || [])[0] || null; }
+  function sportLabel(sp) { return ({ climbing: "클라이밍", billiards: "당구", running: "러닝", general: "일반" })[sp] || "동호회"; }
+  function allClubs() { var built = (CFG.clubs || []).slice(); var user = entries(obj(DB.clubs)).map(function (kv) { var c = Object.assign({}, kv[1]); c.id = "dbc:" + kv[0]; c._user = true; c._key = kv[0]; return c; }); return built.concat(user); }
+  function clubById(id) { if (id && id.indexOf("dbc:") === 0) { var k = id.slice(4), v = obj(DB.clubs)[k]; if (!v) return null; var c = Object.assign({}, v); c.id = id; c._user = true; c._key = k; return c; } var f = null; (CFG.clubs || []).forEach(function (x) { if (x.id === id) f = x; }); return f; }
+  function currentClub() { return clubById(state.clubId) || (CFG.clubs || [])[0] || null; }
+  function sessionsOfClub(cid) { return allSessions().filter(function (s) { return (s.clubId || "srk") === (cid || "srk"); }); }
 
   /* 역 → 권역 */
   var STN_MAP = {}; (CFG.stations || []).forEach(function (s) { STN_MAP[s.n] = s.c; });
@@ -237,7 +242,7 @@
   function rebuildDB() {
     var base = sessionData();
     DB = {
-      members: RAW.members, notifications: RAW.notifications, sessions: RAW.sessions,  // 전역
+      members: RAW.members, notifications: RAW.notifications, sessions: RAW.sessions, clubs: RAW.clubs,  // 전역
       trip: base.trip, notices: base.notices, schedule: base.schedule, packing: base.packing,
       polls: base.polls, expenses: base.expenses, photos: base.photos,
       participants: base.participants, paid: base.paid, received: base.received, rides: base.rides
@@ -403,14 +408,15 @@
   function setChrome(nonav) { var app = $("#app"); if (app) app.classList.toggle("nonav", !!nonav); }
   function render() {
     rebuildDB();   // 현재 세션 기준으로 DB 뷰 재구성
-    var sess = state.screen === "hub" ? null : currentSession();
-    var mode = state.screen === "hub" ? "hub" : (sess && sess.kind === "info" ? "info" : "app");
+    var sess = (state.screen === "hub" || state.screen === "clubs") ? null : currentSession();
+    var mode = state.screen === "clubs" ? "clubs" : state.screen === "hub" ? "hub" : (sess && sess.kind === "info" ? "info" : "app");
     // 뒤로가기 히스토리 기록 (화면·세션·탭 단위)
-    var sig = state.screen + "|" + (state.sessionId || "") + "|" + state.tab + "|" + state.alert + "|" + (state.pollId || "");
+    var sig = state.screen + "|" + (state.clubId || "") + "|" + (state.sessionId || "") + "|" + state.tab + "|" + state.alert + "|" + (state.pollId || "");
     if (lastSig !== null && lastSig !== sig) { if (backing) backing = false; else { viewHist.push(lastSig); if (viewHist.length > 40) viewHist.shift(); } }
     lastSig = sig;
     var main = $("#app-main");
-    if (mode === "hub") { $("#gate").classList.add("hidden"); renderHubHeader(); $("#app-nav").innerHTML = ""; setChrome(true); main.innerHTML = viewHub(); window.scrollTo(0, 0); return; }
+    if (mode === "clubs") { $("#gate").classList.add("hidden"); renderClubsHeader(); $("#app-nav").innerHTML = ""; setChrome(true); main.innerHTML = viewClubs(); window.scrollTo(0, 0); return; }
+    if (mode === "hub") { $("#gate").classList.add("hidden"); renderHubHeader(currentClub()); $("#app-nav").innerHTML = ""; setChrome(true); main.innerHTML = viewHub(); window.scrollTo(0, 0); return; }
     if (mode === "info") { $("#gate").classList.add("hidden"); renderHeader(sess); $("#app-nav").innerHTML = ""; setChrome(true); main.innerHTML = viewSessionInfo(sess); window.scrollTo(0, 0); return; }
     // 실시간 앱 세션 — 입장(로그인) 필요
     var m = me && obj(DB.members)[me];
@@ -435,7 +441,8 @@
       state.screen = p[0] || "session"; state.sessionId = p[1] || "summer-mt";
       state.tab = p[2] || "home"; state.alert = p[3] || "notice"; state.pollId = p[4] || null;
       backing = true;
-    } else if (state.screen !== "hub") { state.screen = "hub"; state.pollId = null; } // 세션 안 → 상위(허브)로
+    } else if (state.screen === "session") { state.screen = "hub"; state.pollId = null; }
+    else if (state.screen === "hub") { state.screen = "clubs"; state.clubId = null; state.pollId = null; }
     else { state.tab = "home"; state.pollId = null; }
     render();
   }
@@ -449,11 +456,20 @@
       '<div class="hd-sub">' + (Store.mode === "demo" ? '<span class="badge-demo">데모</span> ' : "") + (dd ? '<span class="badge-dday">' + dd + "</span>" : "") + (sess.subtitle ? " " + esc(sess.subtitle) : "") + "</div></div>" +
       '<button class="bell-btn" data-action="open-notifs" aria-label="알림">' + icon("bell", 22) + (unread ? '<span class="bell-badge">' + (unread > 9 ? "9+" : unread) + "</span>" : "") + "</button>";
   }
-  function renderHubHeader() {
+  function renderClubsHeader() {
     var loggedIn = !!(me && (obj(DB.members)[me] || {}).claimed);
     $("#app-header").innerHTML =
       '<div class="hd-brand"><span class="hd-brand-emoji">🤙</span>' +
-      '<div><div class="hd-title">슈퍼리치키드</div><div class="hd-sub">우리들의 세션</div></div></div>' +
+      '<div><div class="hd-title">동호회</div><div class="hd-sub">함께 모이는 우리들</div></div></div>' +
+      (loggedIn ? '<button class="me-chip" data-action="open-profile">' + avatar(me, 24) + "<span>" + esc(memberName(me)) + "</span></button>" : "");
+  }
+  function renderHubHeader(club) {
+    club = club || {};
+    var loggedIn = !!(me && (obj(DB.members)[me] || {}).claimed);
+    $("#app-header").innerHTML =
+      '<button class="hd-back" data-action="go-clubs" aria-label="동호회 목록으로">' + icon("back", 22) + "<span>동호회</span></button>" +
+      '<div class="hd-brand" style="flex:1;min-width:0"><span class="hd-brand-emoji">' + (club.emoji || "🤙") + '</span>' +
+      '<div style="min-width:0"><div class="hd-title" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + esc(club.name || "세션") + '</div><div class="hd-sub">' + esc(sportLabel(club.sport)) + '</div></div></div>' +
       (loggedIn ? '<button class="me-chip" data-action="open-profile">' + avatar(me, 24) + "<span>" + esc(memberName(me)) + "</span></button>" : "");
   }
   function renderNav() {
@@ -547,14 +563,34 @@
   /* ============================================================
      상위(허브) 페이지 — 세션 목록
      ============================================================ */
+  function viewClubs() {
+    var list = allClubs(), h = "";
+    if (Store.mode === "demo") h += '<div class="demo-note">⚠️ <b>오프라인 임시 모드</b> — 실시간 연결이 안 돼, 입력 내용이 이 기기에만 저장돼요. <button class="link" data-action="reload-app">새로고침</button> 후 다시 시도해 주세요.</div>';
+    h += '<div class="hub-head"><h1>동호회</h1><p class="hub-sub">함께 운동하고 모이는 동호회를 골라보세요.</p></div>';
+    h += '<div class="list-grid sess-grid">';
+    list.forEach(function (c) { h += clubCard(c); });
+    if (isMeAdmin()) h += '<button class="card sess-add" data-action="create-club">' + icon("plus", 24) + "<span>동호회 개설</span></button>";
+    h += "</div>";
+    return '<div class="hub-wrap">' + h + "</div>";
+  }
+  function clubCard(c) {
+    var n = sessionsOfClub(c.id).length;
+    return '<div class="card sess-card acc-' + esc(c.accent || "red") + '" data-action="open-club" data-id="' + esc(c.id) + '">' +
+      '<div class="sc-top"><span class="sc-emoji">' + (c.emoji || "🏅") + '</span><span class="sc-badge now">' + esc(sportLabel(c.sport)) + "</span></div>" +
+      '<div class="sc-title">' + esc(c.name) + "</div>" +
+      (c.desc ? '<div class="sc-subtitle">' + esc(c.desc) + "</div>" : "") +
+      '<div class="sc-foot"><span class="sc-tag live">동호회</span><span class="sc-go">세션 ' + n + "개 ›</span></div>" +
+      "</div>";
+  }
   function viewHub() {
-    var list = allSessions(), h = "";
+    var club = currentClub() || {}, list = sessionsOfClub(state.clubId), h = "";
     if (Store.mode === "demo") h += '<div class="demo-note">⚠️ <b>오프라인 임시 모드</b> — 실시간 연결이 안 돼, 지금 입력한 투표·정산·공지는 이 기기에만 저장되고 다른 크루원에겐 안 보여요. <button class="link" data-action="reload-app">새로고침</button> 후 다시 시도해 주세요.</div>';
-    h += '<div class="hub-head"><h1>우리들의 세션</h1><p class="hub-sub">슈퍼리치키드가 함께한 · 함께할 일정을 모아봤어요.</p></div>';
+    h += '<div class="hub-head"><h1>' + esc(club.name || "세션") + '</h1><p class="hub-sub">' + esc(club.desc || sportLabel(club.sport)) + ' · 함께할 일정</p></div>';
     h += '<div class="list-grid sess-grid">';
     list.forEach(function (s) { h += sessionCard(s); });
     if (isMeAdmin()) h += '<button class="card sess-add" data-action="add-session">' + icon("plus", 24) + "<span>세션 추가하기</span></button>";
     h += "</div>";
+    if (isMeAdmin() && club._user) h += '<div class="card" style="margin-top:12px"><h2 class="sec" style="margin:0 0 12px">동호회 관리</h2><button class="btn-line btn-block" data-action="edit-club" data-id="' + esc(club.id) + '">동호회 정보 수정</button><button class="link-danger" data-action="del-club" data-id="' + esc(club.id) + '" style="display:block;width:100%;text-align:center;margin-top:12px">동호회 삭제</button></div>';
     return '<div class="hub-wrap">' + h + "</div>";
   }
   function sessionCard(s) {
@@ -602,6 +638,23 @@
     return h + "</div>";
   }
 
+  /* 동호회 개설/수정 폼 (운영진) */
+  function formAddClub(editId) {
+    if (!isMeAdmin()) return;
+    var ed = editId ? clubById(editId) : null;
+    var sports = [["climbing", "클라이밍"], ["billiards", "당구"], ["running", "러닝"], ["general", "일반"]];
+    var emojis = ["🧗", "🎱", "🏃", "🏅", "⚽", "🏀", "🏸", "🎾", "🚴", "🧘", "🥾", "🏊"];
+    var accents = [["red", "레드"], ["blue", "블루"], ["green", "그린"], ["purple", "퍼플"], ["orange", "오렌지"]];
+    var curEmoji = ed && ed.emoji ? ed.emoji : emojis[0], curAcc = ed && ed.accent ? ed.accent : "red", curSport = ed && ed.sport ? ed.sport : "climbing";
+    if (emojis.indexOf(curEmoji) < 0) emojis.unshift(curEmoji);
+    openModal("<h2>" + (ed ? "동호회 수정" : "동호회 개설") + "</h2>" +
+      '<label>종목</label><div class="seg">' + sports.map(function (sp) { return '<button type="button" class="seg-b' + (sp[0] === curSport ? " on" : "") + '" data-action="pick-sport" data-s="' + sp[0] + '">' + sp[1] + "</button>"; }).join("") + '<input type="hidden" id="f-csport" value="' + curSport + '"></div>' +
+      '<label>이모지</label><div class="emoji-pick" id="f-cemoji-wrap">' + emojis.map(function (e) { return '<button type="button" class="emoji-b' + (e === curEmoji ? " on" : "") + '" data-action="pick-cemoji" data-e="' + e + '">' + e + "</button>"; }).join("") + '<input type="hidden" id="f-cemoji" value="' + esc(curEmoji) + '"></div>' +
+      '<label>동호회 이름</label><input id="f-cname" placeholder="예: 강남 3구 당구 동호회" value="' + (ed ? esc(ed.name || "") : "") + '">' +
+      '<label>한 줄 소개 (선택)</label><input id="f-cdesc" placeholder="예: 매주 수요일 저녁 모임" value="' + (ed ? esc(ed.desc || "") : "") + '">' +
+      '<label>색상</label><div class="seg">' + accents.map(function (a) { return '<button type="button" class="seg-b' + (a[0] === curAcc ? " on" : "") + '" data-action="pick-accent" data-a="' + a[0] + '">' + a[1] + "</button>"; }).join("") + '<input type="hidden" id="f-saccent" value="' + curAcc + '"></div>' +
+      '<div class="modal-foot"><button class="btn-line" data-action="close-modal">취소</button><button class="btn-pri" data-action="save-club"' + (ed ? ' data-edit="' + esc(editId) + '"' : "") + '>' + (ed ? "저장" : "개설") + "</button></div>");
+  }
   /* 세션 추가 폼 (운영진) */
   function formAddSession(editId) {
     if (!isMeAdmin()) return;
@@ -1228,11 +1281,29 @@
     if (a === "open-session") {
       var sid = t.getAttribute("data-id"), so = sessionById(sid);
       if (!so) return;
-      state.screen = "session"; state.sessionId = sid; state.pollId = null;
+      state.screen = "session"; state.sessionId = sid; state.clubId = so.clubId || state.clubId; state.pollId = null;
       if (so.kind === "app") state.tab = "home";
       render(); return;
     }
     if (a === "add-session") { formAddSession(); return; }
+    if (a === "open-club") { state.clubId = t.getAttribute("data-id"); state.screen = "hub"; state.pollId = null; render(); return; }
+    if (a === "go-clubs") { state.screen = "clubs"; state.clubId = null; state.pollId = null; render(); return; }
+    if (a === "create-club") { formAddClub(); return; }
+    if (a === "edit-club") { formAddClub(t.getAttribute("data-id")); return; }
+    if (a === "del-club") { if (!isMeAdmin()) return; var dcid = t.getAttribute("data-id"); if (!dcid || dcid.indexOf("dbc:") !== 0) return; if (sessionsOfClub(dcid).length) { alert("세션이 남아 있어요. 세션을 먼저 삭제한 뒤 동호회를 삭제할 수 있어요."); return; } if (confirm("이 동호회를 삭제할까요?")) { Store.remove("clubs/" + dcid.slice(4)); state.screen = "clubs"; state.clubId = null; render(); } return; }
+    if (a === "pick-sport") { var spv = t.getAttribute("data-s"); var sw = $("#f-csport"); if (sw) sw.value = spv; Array.prototype.forEach.call(t.parentNode.querySelectorAll(".seg-b"), function (b) { b.classList.toggle("on", b.getAttribute("data-s") === spv); }); return; }
+    if (a === "pick-cemoji") { var cem = t.getAttribute("data-e"); var cw = $("#f-cemoji"); if (cw) cw.value = cem; Array.prototype.forEach.call(document.querySelectorAll("#f-cemoji-wrap .emoji-b"), function (b) { b.classList.toggle("on", b.getAttribute("data-e") === cem); }); return; }
+    if (a === "save-club") {
+      if (!isMeAdmin()) return;
+      var ceditId = t.getAttribute("data-edit");
+      var cname = clampStr(($("#f-cname") || {}).value, 40); if (!cname) { alert("동호회 이름을 입력해주세요."); return; }
+      var cdata = { name: cname, sport: ($("#f-csport") || {}).value || "general", emoji: ($("#f-cemoji") || {}).value || "🏅", accent: ($("#f-saccent") || {}).value || "red", desc: clampStr(($("#f-cdesc") || {}).value, 60) };
+      if (ceditId && ceditId.indexOf("dbc:") === 0) { Store.update("clubs/" + ceditId.slice(4), cdata); closeModal(); render(); return; }
+      cdata.by = me || null; cdata.ts = Date.now();
+      var ckey = Store.push("clubs", cdata);
+      if (ckey) { state.clubId = "dbc:" + ckey; state.screen = "hub"; }
+      closeModal(); render(); return;
+    }
     if (a === "edit-session") { formAddSession(t.getAttribute("data-id")); return; }
     if (a === "sess-part-all") { ev.preventDefault(); document.querySelectorAll(".f-sess-part").forEach(function (c) { c.checked = true; }); return; }
     if (a === "sess-part-none") { ev.preventDefault(); document.querySelectorAll(".f-sess-part").forEach(function (c) { c.checked = false; }); return; }
@@ -1257,7 +1328,7 @@
         if (spchecks.length) RawStore.set("s/" + seditId + "/participants", spmap);
         closeModal(); render(); return;
       }
-      sdata.kind = "app"; sdata.by = me || null; sdata.ts = Date.now();
+      sdata.kind = "app"; sdata.clubId = state.clubId || "srk"; sdata.by = me || null; sdata.ts = Date.now();
       var skey = Store.push("sessions", sdata);
       if (spchecks.length && skey) RawStore.set("s/db:" + skey + "/participants", spmap);
       closeModal(); render(); return;

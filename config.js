@@ -53,9 +53,13 @@ window.SRK_CONFIG = {
        kind: "info" → 카드를 누르면 읽기전용 일정 상세 페이지로 이동
      크루가 앱 안에서 '세션 추가하기'로 만든 카드는 DB(sessions)에 따로 저장돼요.
      accent: red / blue / green / purple / orange (카드·배너 색) */
+  clubs: [
+    { id: "srk", name: "슈퍼리치키드", sport: "climbing", emoji: "🧗", accent: "red", desc: "클라이밍 크루 — MT·원정·정기 모임" }
+  ],
   sessions: [
     {
       id: "summer-mt",
+      clubId: "srk",
       kind: "app",
       emoji: "🏖️",
       accent: "red",
@@ -69,6 +73,7 @@ window.SRK_CONFIG = {
     },
     {
       id: "dws-2026",
+      clubId: "srk",
       kind: "app",
       emoji: "🧗",
       accent: "blue",
