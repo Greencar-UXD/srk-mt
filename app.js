@@ -757,7 +757,7 @@
     }
     return h;
   }
-  function formMatch() {
+  function formMatch(sessionId) {
     var cid = state.clubId, roster = clubRoster(cid);
     if (!(me && (obj(DB.members)[me] || {}).claimed && roster.some(function (r) { return r.id === me; }))) { alert("동호회 멤버로 입장한 뒤 기록할 수 있어요."); return; }
     var opt = function (sel) { return roster.map(function (r) { return '<option value="' + r.id + '"' + (sel === r.id ? " selected" : "") + ">" + esc(r.name) + "</option>"; }).join(""); };
@@ -770,6 +770,7 @@
       '<div class="mt-col"><label>선수 2</label><select id="m-p2">' + opt(p2def) + "</select>" +
         '<div class="mt-3"><span><label>목표(수지)</label><input id="m-t2" type="number" inputmode="numeric" min="1" placeholder="예 15"></span><span><label>득점</label><input id="m-s2" type="number" inputmode="numeric" min="0"></span><span><label>하이런</label><input id="m-h2" type="number" inputmode="numeric" min="0" placeholder="선택"></span></div></div>' +
       '<label>이닝 수 (공통)</label><input id="m-inn" type="number" inputmode="numeric" min="1" placeholder="예: 25">' +
+      '<input type="hidden" id="m-session" value="' + esc(sessionId || "") + '">' +
       "</div>" +
       '<div id="m-err" class="pin-err"></div>' +
       '<div class="modal-foot"><button class="btn-line" data-action="close-modal">취소</button><button class="btn-pri" data-action="save-match">기록</button></div>');
@@ -787,7 +788,7 @@
     if (s1 < 0 || s2 < 0) { if (err) err.textContent = "득점을 확인해주세요."; return; }
     var r1 = t1 > 0 && s1 >= t1, r2 = t2 > 0 && s2 >= t2, winner;
     if (r1 && !r2) winner = p1; else if (r2 && !r1) winner = p2; else winner = (s1 === s2) ? "" : (s1 > s2 ? p1 : p2);
-    var match = { ts: Date.now(), by: me, sessionId: null, p1: { id: p1, target: t1, score: s1, innings: inn, highRun: h1 }, p2: { id: p2, target: t2, score: s2, innings: inn, highRun: h2 }, winner: winner };
+    var match = { ts: Date.now(), by: me, sessionId: (($("#m-session") || {}).value) || null, p1: { id: p1, target: t1, score: s1, innings: inn, highRun: h1 }, p2: { id: p2, target: t2, score: s2, innings: inn, highRun: h2 }, winner: winner };
     var mk = key();
     Store.set("clubmatches/" + cid + "/" + mk, match);
     DB.clubmatches = DB.clubmatches || {}; DB.clubmatches[cid] = DB.clubmatches[cid] || {}; DB.clubmatches[cid][mk] = match;
@@ -795,25 +796,29 @@
   }
   function rankMemberOpt(cid, sel) { return clubRoster(cid).map(function (r) { return '<option value="' + r.id + '"' + (sel === r.id ? " selected" : "") + ">" + esc(r.name) + "</option>"; }).join(""); }
   function saveRecord(rec) { var cid = state.clubId; if (!rankCanRec(cid)) return; var rk = key(); Store.set("clubrecords/" + cid + "/" + rk, rec); DB.clubrecords = DB.clubrecords || {}; DB.clubrecords[cid] = DB.clubrecords[cid] || {}; DB.clubrecords[cid][rk] = rec; closeModal(); render(); }
-  function formClimb() {
+  function formClimb(sessionId) {
     var cid = state.clubId; if (!rankCanRec(cid)) { alert("동호회 멤버로 입장한 뒤 기록할 수 있어요."); return; }
+    var sid = sessionId || "";
     var grades = ""; for (var g = 0; g <= 12; g++) grades += '<option value="' + g + '">V' + g + "</option>";
     openModal("<h2>완등 기록</h2>" +
       '<p class="hint" style="margin:-4px 0 10px">V스케일 볼더링 기준</p>' +
       '<label>멤버</label><select id="c-member">' + rankMemberOpt(cid, me) + "</select>" +
       '<label>난이도</label><select id="c-grade">' + grades + "</select>" +
       '<label>암장 (선택)</label><input id="c-gym" maxlength="30" placeholder="예: 더클라임 강남">' +
+      '<input type="hidden" id="c-session" value="' + esc(sid) + '">' +
       '<div class="modal-foot"><button class="btn-line" data-action="close-modal">취소</button><button class="btn-pri" data-action="save-climb">기록</button></div>');
   }
   function saveClimb() {
     var member = ($("#c-member") || {}).value; if (!member) return;
-    saveRecord({ ts: Date.now(), by: me, kind: "climb", member: member, grade: +(($("#c-grade") || {}).value) || 0, gym: clampStr(($("#c-gym") || {}).value, 30), sessionId: null });
+    saveRecord({ ts: Date.now(), by: me, kind: "climb", member: member, grade: +(($("#c-grade") || {}).value) || 0, gym: clampStr(($("#c-gym") || {}).value, 30), sessionId: (($("#c-session") || {}).value) || null });
   }
-  function formRun() {
+  function formRun(sessionId) {
     var cid = state.clubId; if (!rankCanRec(cid)) { alert("동호회 멤버로 입장한 뒤 기록할 수 있어요."); return; }
+    var sid = sessionId || "";
     openModal("<h2>러닝 기록</h2>" +
       '<label>멤버</label><select id="r-member">' + rankMemberOpt(cid, me) + "</select>" +
       '<div class="mt-3"><span><label>거리 (km)</label><input id="r-dist" type="number" inputmode="decimal" min="0" step="0.1" placeholder="예 5"></span><span><label>시간 (분)</label><input id="r-time" type="number" inputmode="decimal" min="0" step="0.1" placeholder="예 27.5"></span></div>' +
+      '<input type="hidden" id="r-session" value="' + esc(sid) + '">' +
       '<div id="r-err" class="pin-err"></div>' +
       '<div class="modal-foot"><button class="btn-line" data-action="close-modal">취소</button><button class="btn-pri" data-action="save-run">기록</button></div>');
   }
@@ -821,7 +826,7 @@
     var member = ($("#r-member") || {}).value, dist = +(($("#r-dist") || {}).value) || 0, time = +(($("#r-time") || {}).value) || 0, err = $("#r-err");
     if (!member) return;
     if (dist <= 0 || time <= 0) { if (err) err.textContent = "거리와 시간을 입력해주세요."; return; }
-    saveRecord({ ts: Date.now(), by: me, kind: "run", member: member, dist: dist, time: time, sessionId: null });
+    saveRecord({ ts: Date.now(), by: me, kind: "run", member: member, dist: dist, time: time, sessionId: (($("#r-session") || {}).value) || null });
   }
   function sessionCard(s) {
     var st = sessStatus(s), isApp = s.kind === "app", canDel = s._user && isMeAdmin();
@@ -913,6 +918,18 @@
       '<div class="part-grid">' + clubRoster().map(function (m) { return '<label class="pchk"><input type="checkbox" class="f-sess-part" value="' + m.id + '"' + (spOn(m.id) ? " checked" : "") + ">" + avatar(m.id, 24) + "<span>" + esc(m.name) + "</span></label>"; }).join("") + '</div>' +
       '<div class="modal-foot"><button class="btn-line" data-action="close-modal">\uCDE8\uC18C</button><button class="btn-pri" data-action="save-session"' + (ed ? ' data-edit="' + esc(editId) + '"' : "") + '>' + (ed ? "\uC800\uC7A5" : "\uCD94\uAC00") + "</button></div>");
   }
+  function sessionSkillCard(club) {
+    var sid = state.sessionId, cid = club.id, sport = club.sport, canRec = rankCanRec(cid);
+    var label = sport === "billiards" ? "3쿠션 대전" : sport === "climbing" ? "완등" : "러닝";
+    var act = sport === "billiards" ? "add-match" : sport === "climbing" ? "add-climb" : "add-run";
+    var n = sport === "billiards"
+      ? clubMatches(cid).filter(function (m) { return m.sessionId === sid; }).length
+      : clubRecords(cid, sport === "climbing" ? "climb" : "run").filter(function (r) { return r.sessionId === sid; }).length;
+    var h = '<div class="card col"><div class="ms-row"><span>' + icon("ballot", 16) + ' 이 세션 ' + esc(label) + ' 기록</span>' + (n ? '<span class="ms-amt" style="font-size:12px">' + n + '건</span>' : '') + "</div>";
+    if (canRec) h += '<button class="btn-line btn-block" data-action="' + act + '" data-session="' + esc(sid) + '" style="margin-top:10px">' + esc(label) + ' 기록하기</button>';
+    h += '<button class="link" data-action="go-club-ranking" style="display:block;width:100%;text-align:center;margin-top:10px">동호회 순위 보기 ›</button>';
+    return h + "</div>";
+  }
   function viewHome() {
     var t = tripMeta();
     var openPolls = entries(DB.polls).filter(function (kv) { return (kv[1] || {}).status !== "closed"; });
@@ -938,6 +955,8 @@
       '<button class="stat" data-action="go-vote"><div class="stat-n">' + openPolls.length + '</div><div class="stat-l">진행 중 투표</div></button>' +
       '<button class="stat" data-action="tab" data-tab="settle"><div class="stat-n">' + (totalSpent() / 10000).toFixed(totalSpent() % 10000 ? 1 : 0) + '<i>만원</i></div><div class="stat-l">총 지출</div></button>' +
       '<button class="stat" data-action="tab" data-tab="my"><div class="stat-n">' + packDone + "/" + packArr.length + '</div><div class="stat-l">준비물</div></button></div>';
+    var club0 = currentClub() || {};
+    if (clubHasRanking(club0)) h += sessionSkillCard(club0);
 
     // 내 이동(카풀)
     h += '<div class="card col" data-action="tab" data-tab="carpool"><div class="ms-row"><span>' + icon("car", 16) + ' 내 이동</span><span class="ms-amt" style="font-size:12px">' + myRideLabel() + "</span></div></div>";
@@ -1519,12 +1538,13 @@
     /* 상위(허브) / 세션 */
     if (a === "go-hub") { state.screen = "hub"; state.pollId = null; render(); return; }
     if (a === "hub-tab") { state.hubTab = t.getAttribute("data-tab") || "schedule"; render(); return; }
-    if (a === "add-match") { formMatch(); return; }
+    if (a === "go-club-ranking") { state.screen = "hub"; state.hubTab = "ranking"; state.pollId = null; render(); return; }
+    if (a === "add-match") { formMatch(t.getAttribute("data-session") || null); return; }
     if (a === "save-match") { saveMatch(); return; }
     if (a === "del-match") { var mk2 = t.getAttribute("data-id"), mc = obj((obj(DB.clubmatches) || {})[state.clubId])[mk2]; if (!mc) return; if (!(mc.by === me || canManage(me))) return; if (confirm("이 대전 기록을 삭제할까요?")) { Store.remove("clubmatches/" + state.clubId + "/" + mk2); if (DB.clubmatches && DB.clubmatches[state.clubId]) delete DB.clubmatches[state.clubId][mk2]; render(); } return; }
-    if (a === "add-climb") { formClimb(); return; }
+    if (a === "add-climb") { formClimb(t.getAttribute("data-session") || null); return; }
     if (a === "save-climb") { saveClimb(); return; }
-    if (a === "add-run") { formRun(); return; }
+    if (a === "add-run") { formRun(t.getAttribute("data-session") || null); return; }
     if (a === "save-run") { saveRun(); return; }
     if (a === "del-record") { var rk2 = t.getAttribute("data-id"), rc = obj((obj(DB.clubrecords) || {})[state.clubId])[rk2]; if (!rc) return; if (!(rc.by === me || canManage(me))) return; if (confirm("이 기록을 삭제할까요?")) { Store.remove("clubrecords/" + state.clubId + "/" + rk2); if (DB.clubrecords && DB.clubrecords[state.clubId]) delete DB.clubrecords[state.clubId][rk2]; render(); } return; }
     if (a === "reload-app") { location.reload(); return; }
