@@ -502,8 +502,8 @@
   function renderClubsHeader() {
     var loggedIn = !!(me && (obj(DB.members)[me] || {}).claimed);
     $("#app-header").innerHTML =
-      '<div class="hd-brand"><span class="hd-brand-emoji">🤙</span>' +
-      '<div><div class="hd-title">크루핏</div><div class="hd-sub">함께 모이는 동호회</div></div></div>' +
+      '<div class="hd-brand">' +
+      '<div><div class="hd-title">크루핏</div><div class="hd-sub">내게 딱 맞는 동호회</div></div></div>' +
       (loggedIn ? '<button class="me-chip" data-action="open-profile">' + avatar(me, 24) + "<span>" + esc(memberName(me)) + "</span></button>" : "");
   }
   function renderHubHeader(club) {
@@ -638,7 +638,7 @@
   function viewClubs() {
     var list = allClubs(), h = "";
     if (Store.mode === "demo") h += '<div class="demo-note">⚠️ <b>오프라인 임시 모드</b> — 실시간 연결이 안 돼, 입력 내용이 이 기기에만 저장돼요. <button class="link" data-action="reload-app">새로고침</button> 후 다시 시도해 주세요.</div>';
-    h += '<div class="hub-head"><h1>동호회</h1><p class="hub-sub">함께 운동하고 모이는 동호회를 골라보세요.</p></div>';
+    h += '<div class="hub-head"><h1>동호회</h1><p class="hub-sub">내게 딱 맞는 동호회</p></div>';
     h += '<div class="list-grid sess-grid">';
     list.forEach(function (c) { h += clubCard(c); });
     if (isMeAdmin()) h += '<button class="card sess-add" data-action="create-club">' + icon("plus", 24) + "<span>동호회 개설</span></button>";
