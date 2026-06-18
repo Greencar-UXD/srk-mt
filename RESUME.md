@@ -68,6 +68,7 @@
 **에이전트 오판으로 안 고친 것**(검증 결과 멀쩡/의도/지시): 포커스링 "없음"=거짓(styles.css:704에 `:focus-visible` 2px focus-ring 있음), AppBar PC 제목숨김·BottomNav→사이드바=형 지시(task #1, PC헤더), Card shadow sm vs md=의도된 위계, 폰트 'Pretendard Variable'=실제 로드폰트(바꾸면 깨질 위험).
 **N/A(바닐라 앱이 안 쓰는 DS 컴포넌트 기능)**: Tag 삭제버튼, 정사각 아바타, 애니 체크마크, 전용 IconButton/Divider, Input label/hint/error 구조, chart 팔레트, 풀 타입스케일 토큰 — 필요시만 추가.
 
-## ⚠️ 형 결정 필요 (정산 관련, 코드 미변경)
-1. **신규 4명(세운·이창석·전민주·정윤)이 summer-MT 6/27 실제 참석?** → 참석이면 summer-mt memberIds에 추가(정산 분할 16→20, 5,625→4,500원). 불참이면 현행 유지.
-2. **장기범(m05) 탈퇴 맞나?** → 맞으면 roster + 두 세션 memberIds에서 제거. 아직 안 건드림(정산 묶여있어 임의제거 안 함).
+## ✅ 형 결정 반영 완료 (2026-06-18)
+1. **신규 4명: summer-MT 불참 + 크루핏 가입 + SRK 동호회 접근 부여** → 게이트·입장(inClub)을 `sessionMemberIds` 기준으로 변경. 결과: 4명은 SRK 멤버 탭에 보이고 동호회·**미래 세션**엔 입장 가능, summer-MT·dws(계획된 트립)엔 게이트 미노출(정산 16명·5,625 불변). 로그인한 비참여자가 트립 열면 `gateNotMember`("참여 멤버만 입장") 안내.
+2. **장기범(m05): 탈퇴 아님 + MT 참석** → 현행 유지(summer-mt/dws memberIds 16에 포함, 정산 대상). 변경 없음.
+→ **미해결 결정 0건.**
