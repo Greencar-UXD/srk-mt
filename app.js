@@ -103,6 +103,7 @@
       play: '<path d="M7 5l11 7-11 7z"/>',
       download: '<path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 21h14"/>',
       expand: '<path d="M15 3h6v6"/><path d="M9 21H3v-6"/><path d="M21 3l-7 7"/><path d="M3 21l7-7"/>',
+      compass: '<circle cx="12" cy="12" r="9"/><path d="M15.6 8.4l-2 5.2-5.2 2 2-5.2 5.2-2z"/>',
       gear: '<path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.38a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/>'
     };
     return '<svg class="ic" width="' + size + '" height="' + size + '" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + (P[name] || "") + "</svg>";
@@ -457,8 +458,8 @@
   function render() {
     rebuildDB();   // 현재 세션 기준으로 DB 뷰 재구성
     if (!(me && (obj(DB.members)[me] || {}).claimed)) { renderLogin(); return; }  // 앱 레벨 로그인 필요
-    var sess = (state.screen === "hub" || state.screen === "clubs" || state.screen === "me") ? null : currentSession();
-    var mode = (state.screen === "clubs" || state.screen === "me") ? "top" : state.screen === "hub" ? "hub" : (sess && sess.kind === "info" ? "info" : sess && sess.kind === "match" ? "match" : "app");
+    var sess = (state.screen === "hub" || state.screen === "clubs" || state.screen === "me" || state.screen === "explore") ? null : currentSession();
+    var mode = (state.screen === "clubs" || state.screen === "me" || state.screen === "explore") ? "top" : state.screen === "hub" ? "hub" : (sess && sess.kind === "info" ? "info" : sess && sess.kind === "match" ? "match" : "app");
     // 뒤로가기 히스토리 기록 (화면·세션·탭 단위)
     var sig = state.screen + "|" + (state.clubId || "") + "|" + (state.sessionId || "") + "|" + state.tab + "|" + state.alert + "|" + (state.pollId || "");
     if (lastSig !== null && lastSig !== sig) { if (backing) backing = false; else { viewHist.push(lastSig); if (viewHist.length > 40) viewHist.shift(); } }
@@ -467,7 +468,7 @@
     var appEl = $("#app");
     appEl.classList.remove("lvl-top", "club-themed", "acc-red", "acc-blue", "acc-green", "acc-purple", "acc-orange");
     if (mode !== "top") { var tclub = currentClub() || {}; if (tclub.accent) appEl.classList.add("club-themed", "acc-" + tclub.accent); }
-    if (mode === "top") { appEl.classList.add("lvl-top"); $("#gate").classList.add("hidden"); renderTopHeader(); renderTopNav(); setChrome(false); main.innerHTML = (state.screen === "me") ? viewMeTop() : viewClubs(); window.scrollTo(0, 0); return; }
+    if (mode === "top") { appEl.classList.add("lvl-top"); $("#gate").classList.add("hidden"); renderTopHeader(); renderTopNav(); setChrome(false); main.innerHTML = state.screen === "me" ? viewMeTop() : state.screen === "explore" ? viewExplore() : viewClubs(); window.scrollTo(0, 0); return; }
     if (mode === "hub") { $("#gate").classList.add("hidden"); renderHubHeader(currentClub()); $("#app-nav").innerHTML = ""; setChrome(true); main.innerHTML = viewHub(); window.scrollTo(0, 0); return; }
     if (mode === "info") { $("#gate").classList.add("hidden"); renderHeader(sess); $("#app-nav").innerHTML = ""; setChrome(true); main.innerHTML = viewSessionInfo(sess); window.scrollTo(0, 0); return; }
     if (mode === "match") { $("#gate").classList.add("hidden"); renderHeader(sess); $("#app-nav").innerHTML = ""; setChrome(true); main.innerHTML = viewMatchSession(sess); window.scrollTo(0, 0); return; }
@@ -521,7 +522,7 @@
       '<button class="bell-btn" data-action="open-notifs" aria-label="알림">' + icon("bell", 22) + (unread ? '<span class="bell-badge">' + (unread > 9 ? "9+" : unread) + "</span>" : "") + "</button>";
   }
   function renderTopNav() {
-    var tabs = [["clubs", "home", "홈"], ["me", "user", "마이"]];
+    var tabs = [["clubs", "home", "홈"], ["explore", "compass", "탐색"], ["me", "user", "마이"]];
     $("#app-nav").innerHTML = tabs.map(function (t) {
       return '<button class="navbtn' + (state.screen === t[0] ? " on" : "") + '" data-action="top-nav" data-screen="' + t[0] + '"><span class="nav-ic">' + icon(t[1], 22) + "</span><span>" + t[2] + "</span></button>";
     }).join("");
@@ -799,6 +800,28 @@
       (c.desc ? '<div class="sc-subtitle">' + esc(c.desc) + "</div>" : "") +
       '<div class="sc-foot"><span class="sc-tag role-' + cls + '">' + label + '</span><span class="sc-go">' + (n > 0 ? "일정 " + n + "개" : "둘러보기") + " ›</span></div>" +
       "</div>";
+  }
+  function viewExplore() {
+    var meClubs = {}; myClubs().forEach(function (c) { meClubs[c.id] = 1; });
+    var list = allClubs().filter(function (c) { return (c.visibility !== "private") || meClubs[c.id]; });
+    var h = '<div class="hub-wrap">';
+    if (Store.mode === "demo") h += '<div class="demo-note">⚠️ <b>오프라인 임시 모드</b> — 실시간 연결이 안 돼, 입력 내용이 이 기기에만 저장돼요.</div>';
+    h += '<div class="hub-head"><h1>탐색</h1><p class="hub-sub">관심 있는 동호회를 둘러보고 가입해보세요</p></div>';
+    if (!list.length) return h + '<div class="empty-msg">아직 공개된 동호회가 없어요.</div></div>';
+    h += '<div class="list-grid sess-grid">';
+    list.forEach(function (c) { h += exploreCard(c); });
+    return h + "</div></div>";
+  }
+  function exploreCard(c) {
+    var mine = clubRoster(c.id).some(function (r) { return r.id === me; });
+    var memCount = clubRoster(c.id).length;
+    return '<div class="card sess-card acc-' + esc(c.accent || "red") + '"' + (mine ? ' data-action="open-club" data-id="' + esc(c.id) + '"' : "") + '>' +
+      '<div class="sc-top"><span class="sc-emoji">' + (c.emoji || "🏅") + '</span><span class="sc-badge now">' + esc(sportLabel(c.sport)) + "</span></div>" +
+      '<div class="sc-title">' + esc(c.name) + "</div>" +
+      (c.desc ? '<div class="sc-subtitle">' + esc(c.desc) + "</div>" : "") +
+      '<div class="sc-foot"><span class="sc-tag cat">' + icon("user", 12) + " " + memCount + '명</span>' +
+      (mine ? '<span class="sc-go">입장 ›</span>' : '<button class="btn-pri btn-sm" data-action="join-club" data-id="' + esc(c.id) + '">가입하기</button>') +
+      "</div></div>";
   }
   function viewHub() {
     var club = currentClub() || {}, h = "";
@@ -1224,6 +1247,7 @@
     var emojis = ["🧗", "🎱", "🏃", "🏅", "⚽", "🏀", "🏸", "🎾", "🚴", "🧘", "🥾", "🏊"];
     var accents = [["red", "레드"], ["blue", "블루"], ["green", "그린"], ["purple", "퍼플"], ["orange", "오렌지"]];
     var curEmoji = ed && ed.emoji ? ed.emoji : emojis[0], curAcc = ed && ed.accent ? ed.accent : "red", curSport = ed && ed.sport ? ed.sport : "climbing";
+    var curVis = (ed && ed.visibility === "private") ? "private" : "public";
     if (emojis.indexOf(curEmoji) < 0) emojis.unshift(curEmoji);
     openModal("<h2>" + (ed ? "동호회 수정" : "동호회 개설") + "</h2>" +
       '<label>종목</label><div class="seg">' + sports.map(function (sp) { return '<button type="button" class="seg-b' + (sp[0] === curSport ? " on" : "") + '" data-action="pick-sport" data-s="' + sp[0] + '">' + sp[1] + "</button>"; }).join("") + '<input type="hidden" id="f-csport" value="' + curSport + '"></div>' +
@@ -1231,6 +1255,8 @@
       '<label>동호회 이름</label><input id="f-cname" placeholder="예: 강남 3구 당구 동호회" value="' + (ed ? esc(ed.name || "") : "") + '">' +
       '<label>한 줄 소개 (선택)</label><input id="f-cdesc" placeholder="예: 매주 수요일 저녁 모임" value="' + (ed ? esc(ed.desc || "") : "") + '">' +
       '<label>색상</label><div class="seg">' + accents.map(function (a) { return '<button type="button" class="seg-b' + (a[0] === curAcc ? " on" : "") + '" data-action="pick-accent" data-a="' + a[0] + '">' + a[1] + "</button>"; }).join("") + '<input type="hidden" id="f-saccent" value="' + curAcc + '"></div>' +
+      '<label>공개 설정</label><div class="seg">' + [["public", "공개"], ["private", "비공개"]].map(function (v) { return '<button type="button" class="seg-b' + (v[0] === curVis ? " on" : "") + '" data-action="pick-vis" data-v="' + v[0] + '">' + v[1] + "</button>"; }).join("") + '<input type="hidden" id="f-cvis" value="' + curVis + '"></div>' +
+      '<p class="pf-note" style="margin:-8px 0 4px">공개=탐색에 노출되어 누구나 가입 · 비공개=직접 추가(초대)로만</p>' +
       '<div class="modal-foot"><button class="btn-line" data-action="close-modal">취소</button><button class="btn-pri" data-action="save-club"' + (ed ? ' data-edit="' + esc(editId) + '"' : "") + '>' + (ed ? "저장" : "개설") + "</button></div>");
   }
   /* 세션 추가 폼 (운영진) */
@@ -1931,6 +1957,7 @@
       render(); return;
     }
     if (a === "open-club") { state.clubId = t.getAttribute("data-id"); state.screen = "hub"; state.hubTab = "schedule"; state.pollId = null; render(); return; }
+    if (a === "join-club") { var jcid = t.getAttribute("data-id"); if (!jcid || !me) return; if (!clubRoster(jcid).some(function (r) { return r.id === me; })) { Store.set("roster/" + jcid + "/" + me, { name: memberName(me), role: "crew", self: true, ts: Date.now() }); if (!DB.roster) DB.roster = {}; if (!DB.roster[jcid]) DB.roster[jcid] = {}; DB.roster[jcid][me] = { name: memberName(me), role: "crew", self: true }; } state.clubId = jcid; state.screen = "hub"; state.hubTab = "schedule"; state.pollId = null; render(); return; }
     if (a === "go-clubs") { state.screen = "clubs"; state.clubId = null; state.pollId = null; render(); return; }
     if (a === "create-club") { formAddClub(); return; }
     if (a === "open-club-manage") { clubManageSheet(); return; }
@@ -1943,7 +1970,7 @@
       if (!isMeAdmin()) return;
       var ceditId = t.getAttribute("data-edit");
       var cname = clampStr(($("#f-cname") || {}).value, 40); if (!cname) { alert("동호회 이름을 입력해주세요."); return; }
-      var cdata = { name: cname, sport: ($("#f-csport") || {}).value || "general", emoji: ($("#f-cemoji") || {}).value || "🏅", accent: ($("#f-saccent") || {}).value || "red", desc: clampStr(($("#f-cdesc") || {}).value, 60) };
+      var cdata = { name: cname, sport: ($("#f-csport") || {}).value || "general", emoji: ($("#f-cemoji") || {}).value || "🏅", accent: ($("#f-saccent") || {}).value || "red", desc: clampStr(($("#f-cdesc") || {}).value, 60), visibility: ($("#f-cvis") || {}).value || "public" };
       if (ceditId && ceditId.indexOf("dbc:") === 0) { var ck = ceditId.slice(4); Store.update("clubs/" + ck, cdata); if (DB.clubs && DB.clubs[ck]) Object.assign(DB.clubs[ck], cdata); closeModal(); render(); return; }
       if (ceditId) { Store.set("clubmeta/" + ceditId, cdata); if (!DB.clubmeta) DB.clubmeta = {}; DB.clubmeta[ceditId] = cdata; closeModal(); render(); return; }  // 내장 동호회 정보 수정
       cdata.by = me || null; cdata.ts = Date.now();
@@ -1956,6 +1983,7 @@
     if (a === "sess-part-none") { ev.preventDefault(); document.querySelectorAll(".f-sess-part").forEach(function (c) { c.checked = false; }); return; }
     if (a === "pick-emoji") { var em = t.getAttribute("data-e"); var ew = $("#f-emoji"); if (ew) ew.value = em; Array.prototype.forEach.call(document.querySelectorAll("#f-emoji-wrap .emoji-b"), function (b) { b.classList.toggle("on", b.getAttribute("data-e") === em); }); return; }
     if (a === "pick-accent") { var ac = t.getAttribute("data-a"); var aw = $("#f-saccent"); if (aw) aw.value = ac; Array.prototype.forEach.call(t.parentNode.querySelectorAll(".seg-b"), function (b) { b.classList.toggle("on", b.getAttribute("data-a") === ac); }); return; }
+    if (a === "pick-vis") { var vv = t.getAttribute("data-v"); var vw = $("#f-cvis"); if (vw) vw.value = vv; Array.prototype.forEach.call(t.parentNode.querySelectorAll(".seg-b"), function (b) { b.classList.toggle("on", b.getAttribute("data-v") === vv); }); return; }
     if (a === "save-session") {
       if (!isMeAdmin()) return;
       var seditId = t.getAttribute("data-edit");
