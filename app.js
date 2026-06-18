@@ -1975,7 +1975,8 @@
       if (ceditId) { Store.set("clubmeta/" + ceditId, cdata); if (!DB.clubmeta) DB.clubmeta = {}; DB.clubmeta[ceditId] = cdata; closeModal(); render(); return; }  // 내장 동호회 정보 수정
       cdata.by = me || null; cdata.ts = Date.now();
       var ckey = Store.push("clubs", cdata);
-      if (ckey) { state.clubId = "dbc:" + ckey; state.screen = "hub"; }
+      if (ckey && me) { var rid = "dbc:" + ckey; Store.set("roster/" + rid + "/" + me, { name: memberName(me), role: "manager", self: true, ts: Date.now() }); if (!DB.roster) DB.roster = {}; if (!DB.roster[rid]) DB.roster[rid] = {}; DB.roster[rid][me] = { name: memberName(me), role: "manager", self: true }; }
+      if (ckey) { state.clubId = "dbc:" + ckey; state.screen = "hub"; state.hubTab = "schedule"; }
       closeModal(); render(); return;
     }
     if (a === "edit-session") { formAddSession(t.getAttribute("data-id")); return; }
