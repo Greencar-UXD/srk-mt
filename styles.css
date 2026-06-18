@@ -288,20 +288,20 @@ h1, h2 { margin: 0; }
 .sess-card > * { padding-left: 16px; padding-right: 16px; }
 .sc-top { display: flex; align-items: center; justify-content: space-between; padding-top: 16px; }
 .sc-emoji { font-size: 32px; line-height: 1; }
-.sc-badge { font-size: 12px; font-weight: 800; padding: 4px 8px; border-radius: 999px; letter-spacing: .3px;
-  color: #fff; background: linear-gradient(135deg, var(--acc) 0%, var(--acc2) 110%); }
-.sc-badge.past { background: var(--muted); }
+.sc-badge { font-size: 12px; font-weight: 700; padding: 4px 9px; border-radius: 999px; letter-spacing: 0;
+  color: var(--acc); background: color-mix(in srgb, var(--acc) 13%, transparent); }
+.sc-badge.past { background: color-mix(in srgb, var(--ink) 8%, transparent); color: var(--muted); }
 .sc-title { font-size: 16px; font-weight: 850; letter-spacing: -.4px; margin-top: 12px; }
-.sc-subtitle { font-size: 12px; color: var(--acc); font-weight: 700; margin-top: 4px; }
+.sc-subtitle { font-size: 12px; color: var(--muted); font-weight: 500; margin-top: 4px; }
 .sc-meta { font-size: 12px; color: var(--muted); line-height: 1.95; margin-top: 8px; }
-.sc-meta .ic { color: var(--acc); vertical-align: -.2em; }
+.sc-meta .ic { color: var(--muted); vertical-align: -.2em; }
 .sc-summary { font-size: 12px; color: var(--ink); line-height: 1.6; margin-top: 8px;
   padding-top: 8px; border-top: 0px solid var(--line); }
 .sc-foot { display: flex; align-items: center; justify-content: space-between; padding: 12px 16px 16px 16px; margin-top: 8px; }
 .sc-tag { font-size: 12px; font-weight: 800; padding: 4px 8px; border-radius: var(--radius-pill); }
 .sc-tag.live { color: var(--green); background: color-mix(in srgb, var(--green) 14%, transparent); }
 .sc-tag.info { color: var(--muted); background: color-mix(in srgb, var(--muted) 14%, transparent); }
-.sc-go { font-size: 12px; font-weight: 800; color: var(--acc); }
+.sc-go { font-size: 12px; font-weight: 700; color: var(--muted); }
 .sc-del { position: absolute; top: 8px; right: 8px; width: 24px; height: 24px; border-radius: 8px;
   display: flex; align-items: center; justify-content: center; font-size: 16px; line-height: 1; color: var(--muted);
   background: color-mix(in srgb, var(--ink) 6%, transparent); padding: 0; z-index: 2; }
@@ -894,11 +894,11 @@ input:focus-visible, select:focus-visible, textarea:focus-visible {
 .feed { display: flex; flex-direction: column; gap: 10px; }
 .feed-item { cursor: pointer; }
 .feed-item:active { transform: scale(.99); }
-.fi-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 8px; }
-.fi-club { font-weight: 700; font-size: 13px; color: var(--acc, var(--ink)); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.fi-ago { font-size: 11px; color: var(--muted); flex: none; }
+.fi-head { display: flex; align-items: center; gap: 6px; margin-bottom: 8px; }
+.fi-club { font-weight: 700; font-size: 13px; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.fi-ago { font-size: 11px; color: var(--muted); flex: none; margin-left: auto; }
 .fi-body { display: flex; align-items: flex-start; gap: 10px; }
-.fi-ic { flex: none; color: var(--acc, var(--pri)); margin-top: 1px; }
+.fi-ic { flex: none; color: var(--muted); margin-top: 1px; }
 .fi-main { flex: 1; min-width: 0; }
 .fi-lab { font-weight: 800; font-size: 14px; margin-bottom: 2px; }
 .fi-text { font-size: 13px; color: var(--muted); line-height: 1.45; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
@@ -907,5 +907,5 @@ input:focus-visible, select:focus-visible, textarea:focus-visible {
 .feat-row .chk { display: inline-flex; align-items: center; gap: 6px; font-size: 14px; }
 /* 피드 NEW 표시 */
 .fi-new { flex: none; font-size: 9px; font-weight: 800; letter-spacing: .3px; color: #fff; background: var(--pos); border-radius: 999px; padding: 1px 6px; margin-left: 6px; }
-.feed-item.is-new { border-color: color-mix(in srgb, var(--acc) 45%, var(--line)); }
+.feed-item.is-new { border-color: color-mix(in srgb, var(--pri) 38%, var(--line)); }
 .feed-newcnt { color: var(--pos); font-weight: 800; }
