@@ -62,7 +62,7 @@
     name = String(name || "").trim(); if (!name) return "?";
     return name.length >= 3 ? name.slice(-2) : name.slice(0, 2);
   }
-  var AV_COLORS = ["#e5302a", "#2fa85a", "#3b6fe0", "#e0489e", "#7c5cfc", "#f59f00", "#119d8d", "#d6336c", "#1f7ae0", "#8338ec", "#f4791f", "#08916a"];
+  var AV_COLORS = ["#4a505a", "#5a616c", "#6b727d", "#3e444d", "#7a818c", "#545b65", "#656c77", "#474d57"];
   function avColor(id) { var s = String(id || ""), h = 0; for (var i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) >>> 0; return AV_COLORS[h % AV_COLORS.length]; }
   function avText(hex) { var c = String(hex).replace("#", ""); if (c.length === 3) c = c[0]+c[0]+c[1]+c[1]+c[2]+c[2]; var r = parseInt(c.slice(0,2),16), g = parseInt(c.slice(2,4),16), b = parseInt(c.slice(4,6),16); return (r*299 + g*587 + b*114) / 1000 > 140 ? "#1a1613" : "#fff"; }
   function avatarThumb(u, size) { u = String(u || ""); var px = Math.round((size || 28) * 2); return u.indexOf("/upload/") >= 0 ? u.replace("/upload/", "/upload/c_fill,g_auto,w_" + px + ",h_" + px + ",q_auto,f_auto/") : u; }
@@ -107,6 +107,8 @@
       users: '<circle cx="9" cy="8" r="3.1"/><path d="M3.5 19a5.5 5.5 0 0 1 11 0"/><path d="M16 5.3a3.1 3.1 0 0 1 0 5.4"/><path d="M17.5 13.6a5.5 5.5 0 0 1 3 5.4"/>',
       ball: '<circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="2.6"/>',
       activity: '<path d="M3 12h3.6l2.4-6 4 13 2.4-7H21"/>',
+      trophy: '<path d="M7 4.5h10v3.5a5 5 0 0 1-10 0V4.5z"/><path d="M7 6.5H4.6a2.4 2.4 0 0 0 2.6 2.4M17 6.5h2.4a2.4 2.4 0 0 1-2.6 2.4"/><path d="M9.5 19.5h5M12 14v5.5"/>',
+      alert: '<path d="M12 4 2.6 20h18.8L12 4z"/><path d="M12 10.5v4"/><path d="M12 17.5h.01"/>',
       gear: '<path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.38a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/>'
     };
     return '<svg class="ic" width="' + size + '" height="' + size + '" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + (P[name] || "") + "</svg>";
@@ -162,6 +164,7 @@
   function currentSession() { return sessionById(state.sessionId) || (CFG.sessions || [])[0] || null; }
   function sportLabel(sp) { return ({ climbing: "클라이밍", billiards: "당구", running: "러닝", general: "일반" })[sp] || "크루"; }
   function sportIcon(sp) { return ({ climbing: "mountain", billiards: "ball", running: "activity", general: "users" })[sp] || "users"; }
+  function sessionIcon(s) { if (s && s.match) return "ball"; var cat = { "정기 모임": "users", "외부 활동": "compass", "MT·여행": "bag", "대회·시합": "ballot", "번개": "activity" }; if (s && cat[s.category]) return cat[s.category]; var c = clubById(s && s.clubId) || {}; return sportIcon(c.sport); }
   function clubAvatar(c, size) { c = c || {}; size = size || 38; return '<span class="club-ic acc-' + esc(c.accent || "red") + '" style="width:' + size + 'px;height:' + size + 'px">' + icon(sportIcon(c.sport), Math.round(size * 0.52)) + '</span>'; }
   function allClubs() { var built = (CFG.clubs || []).map(function (x) { return Object.assign({}, x, obj((obj(DB.clubmeta) || {})[x.id])); }); var user = entries(obj(DB.clubs)).map(function (kv) { var c = Object.assign({}, kv[1]); c.id = "dbc:" + kv[0]; c._user = true; c._key = kv[0]; return c; }); return built.concat(user); }
   function clubById(id) { if (id && id.indexOf("dbc:") === 0) { var k = id.slice(4), v = obj(DB.clubs)[k]; if (!v) return null; var c = Object.assign({}, v); c.id = id; c._user = true; c._key = k; return c; } var f = null; (CFG.clubs || []).forEach(function (x) { if (x.id === id) f = x; }); if (f) { var ov = obj((obj(DB.clubmeta) || {})[id]); return Object.assign({}, f, ov); } return f; }
@@ -332,7 +335,7 @@
   function rideWritePath(id) { return state.sessionId === "summer-mt" ? ("members/" + id + "/rideWith") : ("rides/" + id); }
   function debtorMarkedPaid(debtor) { var mp = state.sessionId === "summer-mt" ? obj((obj(DB.members)[debtor] || {}).paid) : obj(obj(DB.paid)[debtor]); return !!mp[me]; }
   function creditorConfirmed(creditor) { var rc = state.sessionId === "summer-mt" ? obj((obj(DB.members)[creditor] || {}).received) : obj(obj(DB.received)[creditor]); return !!rc[me]; }
-  function mySettleHead() { var bal = computeBalances(), myNet = Math.round(bal[me] || 0); var trs = minimalTransfers(bal).filter(function (t) { return t.from === me || t.to === me; }); var pd = myPaidMap(), rc = myReceivedMap(), rem = 0; trs.forEach(function (t) { if (t.from === me && !pd[t.to]) rem += t.amount; else if (t.to === me && !rc[t.from]) rem += t.amount; }); if (myNet === 0 || rem === 0) return { text: "정산 완료 ✓", cls: "", done: true }; return { text: (myNet > 0 ? "받을 돈 " : "보낼 돈 ") + won(rem), cls: (myNet > 0 ? "pos" : "neg"), done: false }; }
+  function mySettleHead() { var bal = computeBalances(), myNet = Math.round(bal[me] || 0); var trs = minimalTransfers(bal).filter(function (t) { return t.from === me || t.to === me; }); var pd = myPaidMap(), rc = myReceivedMap(), rem = 0; trs.forEach(function (t) { if (t.from === me && !pd[t.to]) rem += t.amount; else if (t.to === me && !rc[t.from]) rem += t.amount; }); if (myNet === 0 || rem === 0) return { text: "정산 완료", cls: "", done: true }; return { text: (myNet > 0 ? "받을 돈 " : "보낼 돈 ") + won(rem), cls: (myNet > 0 ? "pos" : "neg"), done: false }; }
 
   /* ============================================================
      초기 데이터
@@ -543,7 +546,7 @@
   }
   function viewMeTop() {
     var m = obj(DB.members)[me] || {}, h = '<div class="hub-wrap">';
-    if (Store.mode === "demo") h += '<div class="demo-note">⚠️ <b>오프라인 임시 모드</b> — 실시간 연결이 안 돼, 입력 내용이 이 기기에만 저장돼요.</div>';
+    if (Store.mode === "demo") h += '<div class="demo-note">' + icon("alert", 14) + ' <b>오프라인 임시 모드</b> — 실시간 연결이 안 돼, 입력 내용이 이 기기에만 저장돼요.</div>';
     h += '<div class="hub-head"><h1>마이</h1></div>';
     h += '<div class="card my-profile" data-action="open-profile"><div class="mp-top">' + avatar(me, 52) +
       '<div class="mp-info"><div class="mp-name">' + esc(memberName(me)) + " " + roleBadge(me) + '</div>' +
@@ -572,7 +575,7 @@
       var s = u.s, c = u.club, dd = ddayLabelOf(s.startDate);
       var title = s.match ? (memberName((s.match.p1 || {}).id) + " vs " + memberName((s.match.p2 || {}).id)) : s.title;
       h += '<div class="card me-row" data-action="open-session" data-id="' + esc(s.id) + '">' +
-        '<span class="me-em">' + (s.emoji || (s.match ? "🎱" : "📌")) + '</span>' +
+        '<span class="me-em acc-' + esc((u.club || {}).accent || "red") + '">' + icon(sessionIcon(s), 16) + '</span>' +
         '<div class="me-mid"><div class="me-tt">' + esc(title) + '</div>' +
         '<div class="me-ss">' + icon(sportIcon(c.sport), 13) + " " + esc(c.name) + ' · ' + esc(dateRangeKo(s.startDate, s.endDate)) + '</div></div>' +
         '<span class="me-dday">' + esc(dd || "예정") + '</span></div>';
@@ -604,7 +607,7 @@
     if (c.sport === "billiards") {
       var stb = billiardsStats(c.id).filter(function (a) { return a.id === me; })[0];
       if (!stb || !stb.games) return "";
-      var h = '<div class="card"><div class="mystat-head">' + (c.emoji || "🎱") + " " + esc(c.name) + '</div><div class="md-mystat">' +
+      var h = '<div class="card"><div class="mystat-head">' + icon(sportIcon(c.sport), 16) + " " + esc(c.name) + '</div><div class="md-mystat">' +
         msStat(fmtAvg(stb.avg), "에버리지") + msStat(stb.games, "경기") + msStat(stb.wins, "승") + msStat(stb.highRun, "하이런") + "</div>";
       var recent = clubMatches(c.id).filter(function (mm) { return mm.p1 && mm.p2 && (mm.p1.id === me || mm.p2.id === me); }).slice(0, 5);
       if (recent.length) {
@@ -620,13 +623,13 @@
     if (c.sport === "climbing") {
       var stc = climbStats(c.id).filter(function (a) { return a.id === me; })[0];
       if (!stc || !stc.sends) return "";
-      return '<div class="card"><div class="mystat-head">' + (c.emoji || "🧗") + " " + esc(c.name) + '</div><div class="md-mystat">' +
+      return '<div class="card"><div class="mystat-head">' + icon(sportIcon(c.sport), 16) + " " + esc(c.name) + '</div><div class="md-mystat">' +
         msStat(fmtGrade(stc.maxGrade), "최고 난이도") + msStat(stc.sends, "완등") + "</div></div>";
     }
     if (c.sport === "running") {
       var str = runStats(c.id).filter(function (a) { return a.id === me; })[0];
       if (!str || !str.runs) return "";
-      return '<div class="card"><div class="mystat-head">' + (c.emoji || "🏃") + " " + esc(c.name) + '</div><div class="md-mystat">' +
+      return '<div class="card"><div class="mystat-head">' + icon(sportIcon(c.sport), 16) + " " + esc(c.name) + '</div><div class="md-mystat">' +
         msStat(fmtPace(str.bestPace), "베스트 페이스") + msStat(str.runs, "러닝") + msStat(Math.round(str.dist * 10) / 10, "총 km") + "</div></div>";
     }
     return "";
@@ -813,7 +816,7 @@
     if (it.kind === "notice") { ic = "megaphone"; lab = "새 공지"; body = it.text; tab = "board"; bt = "notice"; }
     else if (it.kind === "poll") { ic = "ballot"; lab = it.closed ? "투표 마감" : "새 투표"; body = it.q; tab = "board"; bt = "poll"; }
     else if (it.kind === "dues") { ic = "wallet"; lab = "회비 등록"; body = it.title + " · 1인 " + won(it.amount); tab = "board"; bt = "dues"; }
-    else if (it.kind === "match") { var m = it.m; ic = "ballot"; lab = "대전 결과"; body = memberName(m.p1.id) + " " + (+m.p1.score || 0) + " : " + (+m.p2.score || 0) + " " + memberName(m.p2.id) + (m.winner ? " · 🏆 " + memberName(m.winner) : ""); tab = "ranking"; bt = "notice"; }
+    else if (it.kind === "match") { var m = it.m; ic = "ballot"; lab = "대전 결과"; body = memberName(m.p1.id) + " " + (+m.p1.score || 0) + " : " + (+m.p2.score || 0) + " " + memberName(m.p2.id) + (m.winner ? " · " + icon("trophy", 13) + " " + memberName(m.winner) : ""); tab = "ranking"; bt = "notice"; }
     else if (it.kind === "session") { ic = "calendar"; lab = "새 일정"; body = it.s.title + (it.s.startDate ? " · " + dateRangeKo(it.s.startDate, it.s.endDate) : ""); tab = "schedule"; bt = "notice"; }
     return '<div class="card feed-item' + (isNew ? " is-new" : "") + ' acc-' + esc(c.accent || "red") + '" data-action="go-club-tab" data-id="' + esc(c.id) + '" data-tab="' + tab + '" data-bt="' + bt + '">' +
       '<div class="fi-head"><span class="fi-club">' + icon(sportIcon(c.sport), 13) + " " + esc(c.name) + '</span>' + (isNew ? '<span class="fi-new">NEW</span>' : "") + '<span class="fi-ago">' + timeago(it.ts) + '</span></div>' +
@@ -824,7 +827,7 @@
     var items = feedItems(), h = '<div class="hub-wrap">';
     var seen = +(localStorage.getItem("srk_feedseen") || 0);
     var newCnt = items.filter(function (it) { return (it.ts || 0) > seen; }).length;
-    if (Store.mode === "demo") h += '<div class="demo-note">⚠️ <b>오프라인 임시 모드</b> — 실시간 연결이 안 돼, 입력 내용이 이 기기에만 저장돼요.</div>';
+    if (Store.mode === "demo") h += '<div class="demo-note">' + icon("alert", 14) + ' <b>오프라인 임시 모드</b> — 실시간 연결이 안 돼, 입력 내용이 이 기기에만 저장돼요.</div>';
     h += '<div class="hub-head"><h1>홈</h1><p class="hub-sub">내 크루 소식' + (newCnt ? ' · <b class="feed-newcnt">새 소식 ' + newCnt + '건</b>' : "") + '</p></div>';
     if (!items.length) return h + '<div class="empty-msg">아직 새 소식이 없어요.<br>\u2018내 크루\u2019 탭에서 크루 활동을 시작해보세요.</div></div>';
     h += '<div class="feed">';
@@ -833,7 +836,7 @@
   }
   function viewClubs() {
     var list = myClubs(), h = "";
-    if (Store.mode === "demo") h += '<div class="demo-note">⚠️ <b>오프라인 임시 모드</b> — 실시간 연결이 안 돼, 입력 내용이 이 기기에만 저장돼요. <button class="link" data-action="reload-app">새로고침</button> 후 다시 시도해 주세요.</div>';
+    if (Store.mode === "demo") h += '<div class="demo-note">' + icon("alert", 14) + ' <b>오프라인 임시 모드</b> — 실시간 연결이 안 돼, 입력 내용이 이 기기에만 저장돼요. <button class="link" data-action="reload-app">새로고침</button> 후 다시 시도해 주세요.</div>';
     h += '<div class="hub-head hub-head-row"><h1>내 크루</h1>' + (isMeAdmin() ? '<button class="btn-pri" data-action="create-club">+ 크루 개설</button>' : "") + '</div>';
     h += '<div class="list-grid sess-grid">';
     list.forEach(function (c) { h += clubCard(c); });
@@ -858,7 +861,7 @@
     var meClubs = {}; myClubs().forEach(function (c) { meClubs[c.id] = 1; });
     var list = allClubs().filter(function (c) { return (c.visibility !== "private") || meClubs[c.id]; });
     var h = '<div class="hub-wrap">';
-    if (Store.mode === "demo") h += '<div class="demo-note">⚠️ <b>오프라인 임시 모드</b> — 실시간 연결이 안 돼, 입력 내용이 이 기기에만 저장돼요.</div>';
+    if (Store.mode === "demo") h += '<div class="demo-note">' + icon("alert", 14) + ' <b>오프라인 임시 모드</b> — 실시간 연결이 안 돼, 입력 내용이 이 기기에만 저장돼요.</div>';
     h += '<div class="page-head" style="margin-bottom:8px"><button class="back" data-action="go-crews">' + icon("back", 18) + ' 내 크루</button></div>';
     h += '<div class="hub-head"><h1>크루 둘러보기</h1><p class="hub-sub">관심 있는 크루를 찾아 가입해보세요</p></div>';
     if (!list.length) return h + '<div class="empty-msg">아직 공개된 크루가 없어요.</div></div>';
@@ -879,7 +882,7 @@
   }
   function viewHub() {
     var club = currentClub() || {}, h = "";
-    if (Store.mode === "demo") h += '<div class="demo-note">⚠️ <b>오프라인 임시 모드</b> — 실시간 연결이 안 돼, 지금 입력한 내용은 이 기기에만 저장되고 다른 크루원에겐 안 보여요. <button class="link" data-action="reload-app">새로고침</button> 후 다시 시도해 주세요.</div>';
+    if (Store.mode === "demo") h += '<div class="demo-note">' + icon("alert", 14) + ' <b>오프라인 임시 모드</b> — 실시간 연결이 안 돼, 지금 입력한 내용은 이 기기에만 저장되고 다른 크루원에겐 안 보여요. <button class="link" data-action="reload-app">새로고침</button> 후 다시 시도해 주세요.</div>';
     h += '<div class="hub-head"><h1>' + esc(club.name || "일정") + '</h1><p class="hub-sub">' + esc(club.desc || sportLabel(club.sport)) + '</p></div>';
     var ranking = clubHasRanking(club);
     var tabs = [["schedule", "일정"]]; if (ranking) tabs.push(["ranking", "순위"]); tabs.push(["board", "게시판"]); tabs.push(["members", "멤버"]);
@@ -928,10 +931,10 @@
         if (tr === "manager") { acts = ""; }
         else if (tr === "staff") {
           if (meMgr) acts += '<button class="link" data-action="set-role" data-id="' + r.id + '" data-role="crew">운영진 해제</button>';
-          if (meMgr && dm.claimed) acts += '<button class="link-danger" data-action="release-claim" data-id="' + r.id + '">입장 해제</button>';
+          if (meMgr && dm.claimed) acts += '<button class="link-muted" data-action="release-claim" data-id="' + r.id + '">입장 해제</button>';
         } else {
           acts += '<button class="link" data-action="set-role" data-id="' + r.id + '" data-role="staff">운영진 지정</button>';
-          if (dm.claimed) acts += '<button class="link-danger" data-action="release-claim" data-id="' + r.id + '">입장 해제</button>';
+          if (dm.claimed) acts += '<button class="link-muted" data-action="release-claim" data-id="' + r.id + '">입장 해제</button>';
           acts += '<button class="link-danger" data-action="del-member" data-id="' + r.id + '">삭제</button>';
         }
       }
@@ -1036,7 +1039,7 @@
     h += '<div class="list-grid">';
     list.forEach(function (n) {
       var canDel = (n.by === me || mng);
-      h += '<div class="card notice' + (n.pinned ? " pin" : "") + '">' + (n.pinned ? '<span class="pin-tag">📌 고정</span>' : "") +
+      h += '<div class="card notice' + (n.pinned ? " pin" : "") + '">' + (n.pinned ? '<span class="pin-tag">' + icon("pin", 13) + ' 고정</span>' : "") +
         '<div class="notice-text">' + linkify(esc(n.text)) + "</div>" +
         '<div class="notice-by">' + (n.by ? chip(n.by) : "") + '<span class="ago">' + timeago(n.ts) + "</span>" +
         (canDel ? '<button class="tl-del" data-action="del-club-notice" data-id="' + n._key + '" aria-label="삭제">×</button>' : "") + "</div></div>";
@@ -1065,7 +1068,7 @@
       var pct = total ? Math.round(cnt / total * 100) : 0, sel = (mine === k);
       h += '<button class="poll-opt' + (sel ? " sel" : "") + '"' + (canVote ? ' data-action="club-vote" data-poll="' + p._key + '" data-opt="' + k + '"' : " disabled") + '>' +
         '<span class="po-bar" style="width:' + pct + '%"></span>' +
-        '<span class="po-label">' + esc(opts[k]) + (sel ? " ✓" : "") + "</span>" +
+        '<span class="po-label">' + esc(opts[k]) + (sel ? " " + icon("check", 13) : "") + "</span>" +
         '<span class="po-pct">' + pct + "% · " + cnt + "</span></button>";
     });
     h += '<div class="poll-foot"><span>' + total + "명 참여</span>" + (p.by ? chip(p.by) : "");
@@ -1190,11 +1193,11 @@
   function matchCard(s, completed) {
     var m = s.match || {}, done = m.status === "done", p1 = m.p1 || {}, p2 = m.p2 || {};
     var clickable = !completed || canManage(me);
-    return '<div class="card sess-card acc-' + esc(s.accent || "blue") + (completed ? " done" : "") + '"' + (clickable ? ' data-action="open-session" data-id="' + esc(s.id) + '"' : "") + '>' +
-      '<div class="sc-top"><span class="sc-emoji">🎱</span><span class="sc-badge ' + (done ? "past" : "now") + '">' + (done ? "종료" : "진행 중") + "</span></div>" +
+    return '<div class="card sess-card acc-' + esc((clubById(s.clubId) || {}).accent || s.accent || "blue") + (completed ? " done" : "") + '"' + (clickable ? ' data-action="open-session" data-id="' + esc(s.id) + '"' : "") + '>' +
+      '<div class="sc-top"><span class="sc-emoji">' + icon("ball", 21) + '</span><span class="sc-badge ' + (done ? "past" : "now") + '">' + (done ? "종료" : "진행 중") + "</span></div>" +
       '<div class="sc-title">' + esc(memberName(p1.id)) + " vs " + esc(memberName(p2.id)) + "</div>" +
       '<div class="sc-meta"><div>' + icon("ballot", 14) + " 3쿠션 대결 · 수지 " + (p1.target || "-") + ":" + (p2.target || "-") + "</div>" + (s.startDate ? "<div>" + icon("calendar", 14) + " " + esc(dateRangeKo(s.startDate, s.endDate)) + "</div>" : "") + "</div>" +
-      (done ? '<div class="sc-summary">' + (m.p1score || 0) + " : " + (m.p2score || 0) + " · 🏆 " + esc(memberName(m.winner)) + "</div>" : "") +
+      (done ? '<div class="sc-summary">' + (m.p1score || 0) + " : " + (m.p2score || 0) + " · " + icon("trophy", 13) + " " + esc(memberName(m.winner)) + "</div>" : "") +
       '<div class="sc-foot"><span class="sc-tag cat">1:1 대결</span><span class="sc-go">' + (clickable ? ((done ? "결과 보기" : "결과 입력") + " ›") : "완료") + "</span></div></div>";
   }
   function formMatchSession() {
@@ -1222,7 +1225,7 @@
       '<div class="md-mid">' + (done ? '<div class="md-score">' + (m.p1score || 0) + " : " + (m.p2score || 0) + "</div>" : '<div class="md-vs-txt">VS</div>') + "</div>" +
       '<div class="md-player">' + avatar(p2.id, 56) + '<div class="md-name">' + esc(memberName(p2.id)) + '</div><div class="md-suji">수지 ' + (p2.target || "-") + "</div></div></div>";
     if (done) {
-      h += '<div class="md-result">🏆 <b>' + esc(memberName(m.winner)) + "</b> 승 · 순위에 반영됐어요</div>";
+      h += '<div class="md-result">' + icon("trophy", 16) + ' <b>' + esc(memberName(m.winner)) + "</b> 승 · 순위에 반영됐어요</div>";
       h += '<button class="btn-line btn-block" data-action="go-club-ranking" style="margin-top:12px">크루 순위 보기 ›</button>';
     } else if (canFin) {
       h += '<h2 class="sec" style="margin-top:20px">대결 결과 입력</h2>' +
@@ -1241,8 +1244,8 @@
     if (s.match) return matchCard(s, completed);
     var st = sessStatus(s), isApp = s.kind === "app";
     var clickable = !completed || canManage(me);
-    return '<div class="card sess-card acc-' + esc(s.accent || "red") + " st-" + st + (completed ? " done" : "") + '"' + (clickable ? ' data-action="open-session" data-id="' + esc(s.id) + '"' : "") + '>' +
-      '<div class="sc-top"><span class="sc-emoji">' + (s.emoji || "📌") + '</span><span class="sc-badge ' + st + '">' + esc(sessStatusLabel(s)) + "</span></div>" +
+    return '<div class="card sess-card acc-' + esc((clubById(s.clubId) || {}).accent || s.accent || "red") + " st-" + st + (completed ? " done" : "") + '"' + (clickable ? ' data-action="open-session" data-id="' + esc(s.id) + '"' : "") + '>' +
+      '<div class="sc-top"><span class="sc-emoji">' + icon(sessionIcon(s), 21) + '</span><span class="sc-badge ' + st + '">' + esc(sessStatusLabel(s)) + "</span></div>" +
       '<div class="sc-title">' + esc(s.title) + "</div>" +
       (s.subtitle ? '<div class="sc-subtitle">' + esc(s.subtitle) + "</div>" : "") +
       '<div class="sc-meta">' +
@@ -1258,8 +1261,8 @@
 
   /* 읽기전용 일정 상세 (info 카드) */
   function viewSessionInfo(s) {
-    var d = (s && s.detail) || {}, h = '<div class="sinfo acc-' + esc(s.accent || "red") + '">';
-    h += '<div class="sinfo-hero"><span class="sih-emoji">' + (s.emoji || "📌") + "</span>" +
+    var d = (s && s.detail) || {}, h = '<div class="sinfo acc-' + esc((clubById(s.clubId) || {}).accent || s.accent || "red") + '">';
+    h += '<div class="sinfo-hero"><span class="sih-emoji">' + icon(sessionIcon(s), 28) + "</span>" +
       '<div class="sih-badge">' + esc(sessStatusLabel(s)) + "</div>" +
       '<div class="sih-title">' + esc(s.title) + "</div>" +
       (s.subtitle ? '<div class="sih-sub">' + esc(s.subtitle) + "</div>" : "") +
@@ -1305,7 +1308,7 @@
     if (emojis.indexOf(curEmoji) < 0) emojis.unshift(curEmoji);
     openModal("<h2>" + (ed ? "크루 수정" : "크루 개설") + "</h2>" +
       '<label>종목</label><div class="seg">' + sports.map(function (sp) { return '<button type="button" class="seg-b' + (sp[0] === curSport ? " on" : "") + '" data-action="pick-sport" data-s="' + sp[0] + '">' + sp[1] + "</button>"; }).join("") + '<input type="hidden" id="f-csport" value="' + curSport + '"></div>' +
-      '<label>이모지</label><div class="emoji-pick" id="f-cemoji-wrap">' + emojis.map(function (e) { return '<button type="button" class="emoji-b' + (e === curEmoji ? " on" : "") + '" data-action="pick-cemoji" data-e="' + e + '">' + e + "</button>"; }).join("") + '<input type="hidden" id="f-cemoji" value="' + esc(curEmoji) + '"></div>' +
+      '<input type="hidden" id="f-cemoji" value="' + esc(curEmoji) + '">' +
       '<label>크루 이름</label><input id="f-cname" placeholder="예: 강남 3구 당구 크루" value="' + (ed ? esc(ed.name || "") : "") + '">' +
       '<label>한 줄 소개 (선택)</label><input id="f-cdesc" placeholder="예: 매주 수요일 저녁 모임" value="' + (ed ? esc(ed.desc || "") : "") + '">' +
       '<label>색상</label><div class="seg">' + accents.map(function (a) { return '<button type="button" class="seg-b' + (a[0] === curAcc ? " on" : "") + '" data-action="pick-accent" data-a="' + a[0] + '">' + a[1] + "</button>"; }).join("") + '<input type="hidden" id="f-saccent" value="' + curAcc + '"></div>' +
@@ -1325,9 +1328,7 @@
     var spOn = function (mid) { return (ed && sparts && Object.keys(sparts).length) ? !!sparts[mid] : false; };
     openModal("<h2>" + (ed ? "\uC138\uC158 \uC218\uC815" : "\uC138\uC158 \uCD94\uAC00\uD558\uAE30") + "</h2>" +
       '<p class="pf-note" style="margin:0 0 12px">' + (ed ? "\uC138\uC158 \uC815\uBCF4\uB97C \uC218\uC815\uD574\uC694." : "\uC0C8 \uC138\uC158\uC744 \uCD94\uAC00\uD574\uC694. \uCD94\uAC00\uD558\uBA74 \uD648\u00B7\uC815\uC0B0\u00B7\uCE74\uD480\u00B7\uC568\uBC94\u00B7\uC900\uBE44\uBB3C\uC774 \uC788\uB294 \uC2E4\uC2DC\uAC04 \uC138\uC158\uC73C\uB85C \uC5F4\uB824\uC694.") + '</p>' +
-      '<label>\uC774\uBAA8\uC9C0</label><div class="emoji-pick" id="f-emoji-wrap">' +
-        emojis.map(function (e) { return '<button type="button" class="emoji-b' + (e === curEmoji ? " on" : "") + '" data-action="pick-emoji" data-e="' + e + '">' + e + "</button>"; }).join("") +
-        '<input type="hidden" id="f-emoji" value="' + esc(curEmoji) + '"></div>' +
+      '<input type="hidden" id="f-emoji" value="' + esc(curEmoji) + '">' +
       '<label>\uC81C\uBAA9</label><input id="f-stitle" placeholder="\uC608: \uC288\uD37C\uB9AC\uCE58\uD0A4\uB4DC \uB3D9\uACC4 MT" value="' + (ed ? esc(ed.title || "") : "") + '">' +
       '<label>\uD55C \uC904 \uC124\uBA85 (\uC120\uD0DD)</label><input id="f-ssub" placeholder="\uC608: \uC2A4\uD0A4 + \uC628\uCC9C" value="' + (ed ? esc(ed.subtitle || "") : "") + '">' +
       '<div class="row2"><div><label>\uC2DC\uC791\uC77C</label><input id="f-sstart" type="date" value="' + (ed ? esc(ed.startDate || "") : "") + '"></div>' +
@@ -1362,7 +1363,7 @@
     var bal = computeBalances(), myNet = Math.round(bal[me] || 0);
     var mapUrl = "https://map.naver.com/v5/search/" + encodeURIComponent(t.address || t.location || "");
     var h = "";
-    if (Store.mode === "demo") h += '<div class="demo-note">⚠️ <b>오프라인 임시 모드</b> — 실시간 연결이 안 돼, 지금 입력한 투표·정산·공지는 이 기기에만 저장되고 다른 크루원에겐 안 보여요. <button class="link" data-action="reload-app">새로고침</button> 후 다시 시도해 주세요.</div>';
+    if (Store.mode === "demo") h += '<div class="demo-note">' + icon("alert", 14) + ' <b>오프라인 임시 모드</b> — 실시간 연결이 안 돼, 지금 입력한 투표·정산·공지는 이 기기에만 저장되고 다른 크루원에겐 안 보여요. <button class="link" data-action="reload-app">새로고침</button> 후 다시 시도해 주세요.</div>';
     h += notifBanners();
     var heroImg = obj(DB.trip).heroImage || t.heroImage || "";
     var heroStyle = heroImg ? ' style="background-image:linear-gradient(180deg, rgba(0,0,0,.34) 0%, rgba(0,0,0,.68) 100%), url(' + esc(heroBg(heroImg)) + ')"' : "";
@@ -1410,7 +1411,7 @@
     opts.forEach(function (o) {
       var oid = o[0], cnt = countVotes(p, oid), pct = voters ? Math.round(cnt / voters * 100) : 0;
       h += '<button class="opt' + (myVote[oid] ? " mine" : "") + '" data-action="vote" data-poll="' + id + '" data-opt="' + oid + '">' +
-        '<span class="opt-bar" style="width:' + pct + '%"></span><span class="opt-l">' + esc(o[1].label) + (myVote[oid] ? " ✓" : "") + "</span><span class=\"opt-c\">" + cnt + "</span></button>";
+        '<span class="opt-bar" style="width:' + pct + '%"></span><span class="opt-l">' + esc(o[1].label) + (myVote[oid] ? " " + icon("check", 13) : "") + "</span><span class=\"opt-c\">" + cnt + "</span></button>";
     });
     h += '<div class="pm-foot">' + voters + "/" + memberCount() + "명 참여 · 눌러서 자세히</div></div>";
     return h;
@@ -1442,7 +1443,7 @@
       var oid = o[0], cnt = countVotes(p, oid), pct = voters ? Math.round(cnt / voters * 100) : 0;
       var who = entries(p.votes).filter(function (kv) { return kv[1] && kv[1][oid]; }).map(function (kv) { return kv[0]; });
       h += '<div class="opt-row' + (closed && maxCnt > 0 && cnt === maxCnt ? " win" : "") + '"><button class="opt big' + (myVote[oid] ? " mine" : "") + (closed ? " dis" : "") + '" ' + (closed ? "disabled" : 'data-action="vote" data-poll="' + id + '" data-opt="' + oid + '"') + ">" +
-        '<span class="opt-bar" style="width:' + pct + '%"></span><span class="opt-l">' + (myVote[oid] ? "✓ " : "") + esc(o[1].label) + "</span><span class=\"opt-c\">" + cnt + " · " + pct + "%</span></button>" +
+        '<span class="opt-bar" style="width:' + pct + '%"></span><span class="opt-l">' + (myVote[oid] ? icon("check", 13) + " " : "") + esc(o[1].label) + "</span><span class=\"opt-c\">" + cnt + " · " + pct + "%</span></button>" +
         (who.length ? '<div class="opt-who">' + who.map(function (w) { return avatar(w, 22); }).join("") + "</div>" : "") + "</div>";
     });
     if (p.allowAddOptions && !closed) h += '<button class="add-opt" data-action="add-opt" data-id="' + id + '">+ 선택지 추가</button>';
@@ -1614,7 +1615,7 @@
   function viewPhotos() {
     var h = '<div class="page-head"><h1>앨범</h1>' + (cloudOn() ? '<button class="btn-pri" data-action="pick-photos">+ 올리기</button>' : "") + "</div>";
     if (!cloudOn()) {
-      h += '<div class="demo-note">📷 사진·영상 기능을 켜려면 <b>Cloudinary 연결</b>이 필요해요. (config.js의 <code>cloudinary</code> 값) — 연결되면 앱 안에서 업로드 · 일부/전체 선택 · 일괄 다운로드가 켜집니다.</div>';
+      h += '<div class="demo-note">' + icon("camera", 14) + ' 사진·영상 기능을 켜려면 <b>Cloudinary 연결</b>이 필요해요. (config.js의 <code>cloudinary</code> 값) — 연결되면 앱 안에서 업로드 · 일부/전체 선택 · 일괄 다운로드가 켜집니다.</div>';
       return h;
     }
     var photos = bySort(entries(DB.photos), function (kv) { return -(kv[1].ts || 0); });
@@ -1632,7 +1633,7 @@
       h += '<div class="ph-cell' + (on ? " sel" : "") + '" data-action="ph-toggle" data-id="' + kv[0] + '">' +
         '<img loading="lazy" src="' + esc(mediaThumb(p)) + '" alt="">' +
         (isVid ? '<span class="ph-vid">' + icon("play", 13) + '</span>' : "") +
-        '<span class="ph-check">' + (on ? "✓" : "") + "</span>" +
+        '<span class="ph-check">' + (on ? icon("check", 14) : "") + "</span>" +
         '<a class="ph-open" href="' + esc(p.url) + '" target="_blank" rel="noopener" data-action="ph-open" title="원본 보기">' + icon("expand", 14) + '</a>' +
         "</div>";
     });
@@ -1670,7 +1671,7 @@
     notices.forEach(function (kv) {
       var n = kv[1];
       var canEditN = (n.by === me || isMeAdmin());
-      h += '<div class="card notice' + (n.pinned ? " pin" : "") + '">' + (n.pinned ? '<span class="pin-tag">📌 고정</span>' : "") + '<div class="notice-text">' + linkify(esc(n.text)) + "</div>" +
+      h += '<div class="card notice' + (n.pinned ? " pin" : "") + '">' + (n.pinned ? '<span class="pin-tag">' + icon("pin", 13) + ' 고정</span>' : "") + '<div class="notice-text">' + linkify(esc(n.text)) + "</div>" +
         (n.link ? '<a class="tl-link" href="' + esc(n.link) + '" target="_blank" rel="noopener">' + icon("link", 13) + " 링크 바로가기</a>" : "") +
         '<div class="notice-by">' + (n.by ? chip(n.by) : "") + '<span class="ago">' + timeago(n.ts) + "</span>" +
         (canEditN ? '<span class="notice-acts"><button class="link" data-action="edit-notice" data-id="' + kv[0] + '">' + icon("edit", 14) + " 수정</button><button class=\"cmt-del\" data-action=\"del-notice\" data-id=\"" + kv[0] + '">×</button></span>' : "") + "</div></div>";
@@ -1689,7 +1690,7 @@
       h += '<div class="list-grid">';
       shared.forEach(function (kv) {
         var p = kv[1];
-        h += '<div class="pk-item' + (p.done ? " done" : "") + '"><button class="pk-check' + (mgr ? "" : " ro") + '"' + (mgr ? ' data-action="toggle-pack" data-id="' + kv[0] + '"' : "") + ">" + (p.done ? "✓" : "") + "</button>" +
+        h += '<div class="pk-item' + (p.done ? " done" : "") + '"><button class="pk-check' + (mgr ? "" : " ro") + '"' + (mgr ? ' data-action="toggle-pack" data-id="' + kv[0] + '"' : "") + ">" + (p.done ? icon("check", 14) : "") + "</button>" +
           '<div class="pk-label">' + esc(p.label) + (p.assignee ? ' <span class="pk-who">' + chip(p.assignee) + "</span>" : ' <span class="pk-need">담당 미정</span>') + "</div>" +
           (mgr ? '<button class="tl-edit" data-action="edit-pack" data-id="' + kv[0] + '" aria-label="수정">' + icon("edit", 14) + '</button><button class="tl-del" data-action="del-pack" data-id="' + kv[0] + '">×</button>' : "") + "</div>";
       });
@@ -1701,7 +1702,7 @@
       h += '<div class="list-grid">';
       personal.forEach(function (kv) {
         var p = kv[1], iReady = !!obj(p.ready)[me], cnt = readyCount(p), canDel = (p.by === me || mgr);
-        h += '<div class="pk-item personal"><button class="pk-check ' + (iReady ? "on" : "") + '" data-action="toggle-ready" data-id="' + kv[0] + '">' + (iReady ? "✓" : "") + "</button>" +
+        h += '<div class="pk-item personal"><button class="pk-check ' + (iReady ? "on" : "") + '" data-action="toggle-ready" data-id="' + kv[0] + '">' + (iReady ? icon("check", 14) : "") + "</button>" +
           '<div class="pk-label">' + esc(p.label) + '<span class="pk-prog">' + cnt + "/" + memberCount() + "명 준비완료</span></div>" + (canDel ? '<button class="tl-edit" data-action="edit-pack" data-id="' + kv[0] + '" aria-label="수정">' + icon("edit", 14) + '</button><button class="tl-del" data-action="del-pack" data-id="' + kv[0] + '">×</button>' : "") + "</div>";
       });
       h += "</div>";
@@ -1763,7 +1764,7 @@
       var pv = $("#f-preview"), checks = checkedIds();
       if (split.value === "custom") {
         var sum = 0; Array.prototype.forEach.call(document.querySelectorAll(".f-cust"), function (i) { sum += Number(i.value) || 0; });
-        var amtV = Number(amt.value) || 0; pv.innerHTML = "합계 " + won(sum) + " / 총액 " + won(amtV) + (sum !== amtV ? ' <b class="warn">차이 ' + won(amtV - sum) + "</b>" : " ✓");
+        var amtV = Number(amt.value) || 0; pv.innerHTML = "합계 " + won(sum) + " / 총액 " + won(amtV) + (sum !== amtV ? ' <b class="warn">차이 ' + won(amtV - sum) + "</b>" : " " + icon("check", 13));
       } else { var n = checks.length, per = n ? Math.floor((Number(amt.value) || 0) / n) : 0; pv.innerHTML = n ? (n + "명이 " + won(amt.value) + " → 인당 약 " + won(per)) : "참여자를 선택하세요"; }
     }
     split.onchange = function () { rebuildCustom(); updatePreview(); };
@@ -2099,7 +2100,7 @@
       return;
     }
     if (a === "settle-undo") { ev.stopPropagation(); var suTo = t.getAttribute("data-to"), suAmt = Number(t.getAttribute("data-amt")) || 0; if (suTo) { Store.remove(paidWritePath(suTo)); notify(suTo, memberName(me) + "님이 앞서 보낸 정산 완료 표시를 취소했어요. 아직 못 받았다면 확인해 주세요.", "settle"); } return; }
-    if (a === "settle-confirm") { ev.stopPropagation(); var scFrom = t.getAttribute("data-from"), scAmt = Number(t.getAttribute("data-amt")) || 0; if (!scFrom) return; Store.set(receivedWritePath(scFrom), true); notify(scFrom, memberName(me) + "님이 " + won(scAmt) + " 받았다고 확인했어요. 정산 완료 ✓", "settle"); return; }
+    if (a === "settle-confirm") { ev.stopPropagation(); var scFrom = t.getAttribute("data-from"), scAmt = Number(t.getAttribute("data-amt")) || 0; if (!scFrom) return; Store.set(receivedWritePath(scFrom), true); notify(scFrom, memberName(me) + "님이 " + won(scAmt) + " 받았다고 확인했어요. 정산 완료", "settle"); return; }
     if (a === "settle-unconfirm") { ev.stopPropagation(); var scuFrom = t.getAttribute("data-from"); if (scuFrom) Store.remove(receivedWritePath(scuFrom)); return; }
     if (a === "new-expense") { formNewExpense(null); return; }
     if (a === "edit-expense") { formNewExpense(t.getAttribute("data-id")); return; }

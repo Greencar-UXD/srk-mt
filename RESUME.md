@@ -27,7 +27,7 @@
 - 이 맥엔 **node/brew 없음**. `gh`는 `~/.local/bin`(`export PATH="$HOME/.local/bin:$PATH"`).
 - **JS 문법검증**: JXA — `osascript -l JavaScript -e 'var d=$.NSString.stringWithContentsOfFileEncodingError("…/app.js",4,null);try{new Function(ObjC.unwrap(d));"OK"}catch(e){e.message}'`
 - **프리뷰**: 이제 `./serve.sh`(localhost) 또는 `?demo=1`이 **자동 데모**라 예전 `/tmp/srk-preview` + `firebase = {}` append 트릭은 불필요. **단, 레포 `config.js`엔 여전히 `firebase = {}` 줄을 절대 넣지 말 것**(클라우드 모드 유지 = 실제 크루 데이터). 안전망으로 배포 전 `grep -c 'firebase = {}' config.js` 가 `0`인지 확인.
-- **배포**: `cd ~/Downloads/srk-mt && ./deploy.sh "메시지"` (캐시버스팅 자동, 1~2분 내 반영)
+- **배포**: `cd ~/Downloads/srk-mt && ./deploy.sh` (인자 없이! 첫 인자는 **저장소명**이라 메시지로 쓰면 안 됨 — 커밋 메시지는 자동 "업데이트 날짜". 캐시버스팅 자동, 1~2분 내 반영). 또는 그냥 `git push`(cache-bust Action 활성화 시).
 - 편집은 원자적 파이썬 스크립트(`.count()==n` 단언)로 안전하게.
 
 ## ⚠️ 절대 깨지면 안 되는 불변식
