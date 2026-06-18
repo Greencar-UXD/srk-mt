@@ -477,6 +477,8 @@
     if (state.tab === "vote") { state.alert = "vote"; state.tab = "alert"; }
     if (state.tab === "settle") state.tab = "my";
     if (state.tab === "prep") state.tab = "my";
+    if (state.tab === "carpool" && !sessHas("carpool")) state.tab = "home";
+    if (state.tab === "my" && !sessHas("settle")) state.tab = "home";
     setChrome(false);
     renderHeader(sess); renderNav();
     if (state.tab === "home") main.innerHTML = viewHome();
@@ -633,8 +635,12 @@
       (canManage(me) ? '<button class="hd-gear" data-action="open-club-manage" aria-label="동호회 관리">' + icon("gear", 22) + "</button>" : "") +
       "</div>";
   }
+  function sessHas(f) { var sx = currentSession() || {}; return !sx.features || sx.features.indexOf(f) >= 0; }
   function renderNav() {
-    var tabs = [["home", "home", "홈"], ["alert", "megaphone", "소식"], ["carpool", "car", "카풀"], ["photo", "camera", "앨범"], ["my", "wallet", "정산·준비"]];
+    var tabs = [["home", "home", "홈"], ["alert", "megaphone", "소식"]];
+    if (sessHas("carpool")) tabs.push(["carpool", "car", "카풀"]);
+    tabs.push(["photo", "camera", "앨범"]);
+    if (sessHas("settle")) tabs.push(["my", "wallet", "정산·준비"]);
     $("#app-nav").innerHTML = tabs.map(function (t) {
       return '<button class="navbtn' + (state.tab === t[0] ? " on" : "") + '" data-action="tab" data-tab="' + t[0] + '"><span class="nav-ic">' + icon(t[1], 22) + "</span><span>" + t[2] + "</span></button>";
     }).join("");
@@ -1317,6 +1323,8 @@
       '<label>\uC7A5\uC18C (\uC120\uD0DD)</label><input id="f-sloc" placeholder="\uC608: \uBE44\uBC1C\uB514\uD30C\uD06C" value="' + (ed ? esc(ed.location || "") : "") + '">' +
       '<label>\uC0C9\uC0C1</label><div class="seg">' + accents.map(function (a) { return '<button type="button" class="seg-b' + (a[0] === curAcc ? " on" : "") + '" data-action="pick-accent" data-a="' + a[0] + '">' + a[1] + "</button>"; }).join("") + '<input type="hidden" id="f-saccent" value="' + esc(curAcc) + '"></div>' +
       '<label>분류</label><select id="f-scat">' + ["정기 모임", "외부 활동", "MT·여행", "대회·시합", "번개", "기타"].map(function (cc) { var curC = (ed && ed.category) || "정기 모임"; return '<option' + (cc === curC ? " selected" : "") + ">" + cc + "</option>"; }).join("") + '</select>' +
+      '<label>기능</label><div class="feat-row"><label class="chk"><input type="checkbox" class="f-feat" value="carpool"' + (((ed && ed.features) ? ed.features.indexOf("carpool") >= 0 : !!ed) ? " checked" : "") + '> 카풀</label><label class="chk"><input type="checkbox" class="f-feat" value="settle"' + (((ed && ed.features) ? ed.features.indexOf("settle") >= 0 : !!ed) ? " checked" : "") + '> 정산·준비물</label></div>' +
+      '<p class="pf-note" style="margin:-4px 0 6px">단순 모임은 꺼두면 카풀·정산 탭이 숨겨져요. MT·여행이면 켜두세요.</p>' +
       '<label>\uCC38\uAC00 \uD06C\uB8E8\uC6D0 <button class="mini" data-action="sess-part-all">\uC804\uCCB4</button><button class="mini" data-action="sess-part-none">\uD574\uC81C</button></label>' +
       '<p class="pf-note" style="margin:0 0 8px">\uC774 \uC138\uC158\uC5D0 \uCC38\uAC00\uD560 \uC0AC\uB78C\uB9CC \uACE8\uB77C\uC694. \uC815\uC0B0\u00B7\uCE74\uD480\u00B7\uD22C\uD45C\uAC00 \uC120\uD0DD\uD55C \uC0AC\uB78C \uAE30\uC900\uC73C\uB85C \uAD6C\uC131\uB3FC\uC694.</p>' +
       '<div class="part-grid">' + clubRoster().map(function (m) { return '<label class="pchk"><input type="checkbox" class="f-sess-part" value="' + m.id + '"' + (spOn(m.id) ? " checked" : "") + ">" + avatar(m.id, 24) + "<span>" + esc(m.name) + "</span></label>"; }).join("") + '</div>' +
@@ -1357,19 +1365,23 @@
 
     h += '<div class="stat-row">' +
       '<button class="stat" data-action="go-vote"><div class="stat-n">' + openPolls.length + '</div><div class="stat-l">진행 중 투표</div></button>' +
-      '<button class="stat" data-action="tab" data-tab="my"><div class="stat-n">' + (totalSpent() / 10000).toFixed(totalSpent() % 10000 ? 1 : 0) + '<i>만원</i></div><div class="stat-l">총 지출</div></button>' +
-      '<button class="stat" data-action="tab" data-tab="my"><div class="stat-n">' + packDone + "/" + packArr.length + '</div><div class="stat-l">준비물</div></button></div>';
+      (sessHas("settle")
+        ? '<button class="stat" data-action="tab" data-tab="my"><div class="stat-n">' + (totalSpent() / 10000).toFixed(totalSpent() % 10000 ? 1 : 0) + '<i>만원</i></div><div class="stat-l">총 지출</div></button>' +
+          '<button class="stat" data-action="tab" data-tab="my"><div class="stat-n">' + packDone + "/" + packArr.length + '</div><div class="stat-l">준비물</div></button>'
+        : '<button class="stat" data-action="tab" data-tab="photo"><div class="stat-n">' + entries(DB.photos).length + '</div><div class="stat-l">사진</div></button>' +
+          '<button class="stat"><div class="stat-n">' + memberCount() + '</div><div class="stat-l">멤버</div></button>') +
+      "</div>";
     var club0 = currentClub() || {};
     if (clubHasRanking(club0)) h += sessionSkillCard(club0);
 
     // 내 이동(카풀)
-    h += '<div class="card col" data-action="tab" data-tab="carpool"><div class="ms-row"><span>' + icon("car", 16) + ' 내 이동</span><span class="ms-amt" style="font-size:12px">' + myRideLabel() + "</span></div></div>";
+    if (sessHas("carpool")) h += '<div class="card col" data-action="tab" data-tab="carpool"><div class="ms-row"><span>' + icon("car", 16) + ' 내 이동</span><span class="ms-amt" style="font-size:12px">' + myRideLabel() + "</span></div></div>";
 
     // 내 정산
-    var shH = mySettleHead();
+    if (sessHas("settle")) { var shH = mySettleHead();
     h += '<div class="card my-settle col ' + shH.cls + '" data-action="tab" data-tab="my">' +
       '<div class="ms-row"><span>' + avatar(me, 26) + " <b>" + esc(memberName(me)) + "</b>님 정산</span><span class=\"ms-amt\">" + shH.text + "</span></div>" +
-      '<div class="ms-sub">낸 돈 ' + won(myPaid(me)) + " · 내 몫 " + won(myShare(me)) + "</div></div>";
+      '<div class="ms-sub">낸 돈 ' + won(myPaid(me)) + " · 내 몫 " + won(myShare(me)) + "</div></div>"; }
 
     if (openPolls.length) {
       h += '<h2 class="sec">진행 중 투표</h2><div class="list-grid">';
@@ -2026,6 +2038,7 @@
         location: clampStr(($("#f-sloc") || {}).value, 60), lodging: clampStr(($("#f-slodge") || {}).value, 60),
         category: ($("#f-scat") || {}).value || "정기 모임"
       };
+      sdata.features = Array.prototype.slice.call(document.querySelectorAll(".f-feat:checked")).map(function (c) { return c.value; });
       var spchecks = Array.prototype.slice.call(document.querySelectorAll(".f-sess-part:checked")).map(function (c) { return c.value; });
       var spmap = {}; spchecks.forEach(function (id) { spmap[id] = true; });
       if (seditId && seditId.indexOf("db:") === 0) {
