@@ -884,3 +884,8 @@ input:focus-visible, select:focus-visible, textarea:focus-visible {
 .me-go { color: var(--muted); font-size: 18px; font-weight: 700; }
 .me-dday { flex: none; font-size: 12px; font-weight: 800; color: var(--pri); background: color-mix(in srgb, var(--pri) 12%, transparent); border-radius: 999px; padding: 4px 11px; }
 .mystat-head { font-weight: 800; font-size: 14px; margin-bottom: 12px; }
+/* 접속 현황 (presence) */
+.av-wrap { position: relative; display: inline-flex; flex: none; }
+.av-dot { position: absolute; right: -1px; bottom: -1px; width: 9px; height: 9px; border-radius: 50%; background: var(--pos); border: 2px solid var(--bg); box-sizing: content-box; }
+.mr-sub .pres { color: var(--muted); }
+.mr-sub .pres.on { color: var(--pos); font-weight: 700; }

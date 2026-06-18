@@ -124,6 +124,8 @@
     if (s < 86400) return Math.floor(s / 3600) + "시간 전"; if (s < 604800) return Math.floor(s / 86400) + "일 전";
     var d = new Date(ts); return (d.getMonth() + 1) + "/" + d.getDate();
   }
+  function isOnline(id) { var ls = (obj(DB.members)[id] || {}).lastSeen; return !!ls && (Date.now() - ls < 300000); }
+  function presenceText(id) { var ls = (obj(DB.members)[id] || {}).lastSeen; if (!ls) return ""; return (Date.now() - ls < 300000) ? "접속 중" : (timeago(ls) + " 접속"); }
 
   /* ---------- 세션(일정) 헬퍼 ---------- */
   function ddayOf(s) { if (!s) return null; return Math.round((parseDate(s) - todayKST()) / 86400000); }
@@ -155,7 +157,7 @@
   }
   function currentSession() { return sessionById(state.sessionId) || (CFG.sessions || [])[0] || null; }
   function sportLabel(sp) { return ({ climbing: "클라이밍", billiards: "당구", running: "러닝", general: "일반" })[sp] || "동호회"; }
-  function allClubs() { var built = (CFG.clubs || []).slice(); var user = entries(obj(DB.clubs)).map(function (kv) { var c = Object.assign({}, kv[1]); c.id = "dbc:" + kv[0]; c._user = true; c._key = kv[0]; return c; }); return built.concat(user); }
+  function allClubs() { var built = (CFG.clubs || []).map(function (x) { return Object.assign({}, x, obj((obj(DB.clubmeta) || {})[x.id])); }); var user = entries(obj(DB.clubs)).map(function (kv) { var c = Object.assign({}, kv[1]); c.id = "dbc:" + kv[0]; c._user = true; c._key = kv[0]; return c; }); return built.concat(user); }
   function clubById(id) { if (id && id.indexOf("dbc:") === 0) { var k = id.slice(4), v = obj(DB.clubs)[k]; if (!v) return null; var c = Object.assign({}, v); c.id = id; c._user = true; c._key = k; return c; } var f = null; (CFG.clubs || []).forEach(function (x) { if (x.id === id) f = x; }); if (f) { var ov = obj((obj(DB.clubmeta) || {})[id]); return Object.assign({}, f, ov); } return f; }
   function currentClub() { return clubById(state.clubId) || (CFG.clubs || [])[0] || null; }
   function sessionsOfClub(cid) { return allSessions().filter(function (s) { return (s.clubId || "srk") === (cid || "srk"); }); }
@@ -833,7 +835,9 @@
     h += '<div class="mem-list-club">';
     roster.forEach(function (r) {
       var dm = obj(DB.members)[r.id] || {}, self = (r.id === me), tr = roleOf(r.id), acts = "";
-      var sub = clampStr(dm.bio || "", 80);
+      var bio = clampStr(dm.bio || "", 60), pres = presenceText(r.id);
+      var subHtml = pres ? ('<span class="pres' + (isOnline(r.id) ? " on" : "") + '">' + pres + "</span>" + (bio ? " \u00B7 " + esc(bio) : "")) : esc(bio);
+      var av = '<span class="av-wrap">' + avatar(r.id, 32) + (isOnline(r.id) ? '<span class="av-dot"></span>' : "") + "</span>";
       if (canMng && !self) {
         if (tr === "manager") { acts = ""; }
         else if (tr === "staff") {
@@ -845,7 +849,7 @@
           acts += '<button class="link-danger" data-action="del-member" data-id="' + r.id + '">삭제</button>';
         }
       }
-      h += '<div class="mem-row">' + avatar(r.id, 32) + '<div style="flex:1;min-width:0"><div class="mr-name">' + esc(r.name) + " " + roleTag(r.id) + (self ? ' <span class="rbadge crew">나</span>' : "") + '</div>' + (sub ? '<div class="mr-sub">' + esc(sub) + '</div>' : "") + '</div>' + (acts ? '<div class="mr-act">' + acts + '</div>' : "") + '</div>';
+      h += '<div class="mem-row">' + av + '<div style="flex:1;min-width:0"><div class="mr-name">' + esc(r.name) + " " + roleTag(r.id) + (self ? ' <span class="rbadge crew">나</span>' : "") + '</div>' + (subHtml ? '<div class="mr-sub">' + subHtml + '</div>' : "") + '</div>' + (acts ? '<div class="mr-act">' + acts + '</div>' : "") + '</div>';
     });
     h += "</div>";
     h += '<div class="hint" style="margin-top:12px">멤버 ' + roster.length + '명 · 게이트의 "직접 추가"로 누구나 합류할 수 있어요.</div>';
@@ -1933,8 +1937,8 @@
       var ceditId = t.getAttribute("data-edit");
       var cname = clampStr(($("#f-cname") || {}).value, 40); if (!cname) { alert("동호회 이름을 입력해주세요."); return; }
       var cdata = { name: cname, sport: ($("#f-csport") || {}).value || "general", emoji: ($("#f-cemoji") || {}).value || "🏅", accent: ($("#f-saccent") || {}).value || "red", desc: clampStr(($("#f-cdesc") || {}).value, 60) };
-      if (ceditId && ceditId.indexOf("dbc:") === 0) { Store.update("clubs/" + ceditId.slice(4), cdata); closeModal(); render(); return; }
-      if (ceditId) { Store.set("clubmeta/" + ceditId, cdata); closeModal(); render(); return; }  // 내장 동호회 정보 수정
+      if (ceditId && ceditId.indexOf("dbc:") === 0) { var ck = ceditId.slice(4); Store.update("clubs/" + ck, cdata); if (DB.clubs && DB.clubs[ck]) Object.assign(DB.clubs[ck], cdata); closeModal(); render(); return; }
+      if (ceditId) { Store.set("clubmeta/" + ceditId, cdata); if (!DB.clubmeta) DB.clubmeta = {}; DB.clubmeta[ceditId] = cdata; closeModal(); render(); return; }  // 내장 동호회 정보 수정
       cdata.by = me || null; cdata.ts = Date.now();
       var ckey = Store.push("clubs", cdata);
       if (ckey) { state.clubId = "dbc:" + ckey; state.screen = "hub"; }
@@ -2270,4 +2274,9 @@
     }
     render();
   });
+  (function heartbeat() {
+    function beat() { try { if (me && DB && (obj(DB.members)[me] || {}).claimed) Store.update("members/" + me, { lastSeen: Date.now() }); } catch (e) {} }
+    beat(); setInterval(beat, 150000);
+    document.addEventListener("visibilitychange", function () { if (!document.hidden) beat(); });
+  })();
 })();
