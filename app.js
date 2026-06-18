@@ -450,6 +450,7 @@
   function setChrome(nonav) { var app = $("#app"); if (app) app.classList.toggle("nonav", !!nonav); }
   function render() {
     rebuildDB();   // 현재 세션 기준으로 DB 뷰 재구성
+    if (!(me && (obj(DB.members)[me] || {}).claimed)) { renderLogin(); return; }  // 앱 레벨 로그인 필요
     var sess = (state.screen === "hub" || state.screen === "clubs") ? null : currentSession();
     var mode = state.screen === "clubs" ? "clubs" : state.screen === "hub" ? "hub" : (sess && sess.kind === "info" ? "info" : "app");
     // 뒤로가기 히스토리 기록 (화면·세션·탭 단위)
@@ -544,14 +545,42 @@
   }
 
   /* ---------- 인트로 (이름 → 출발역 → 자차) ---------- */
+  var LOGO_C = '<svg viewBox="0 0 512 512" width="76" height="76" aria-hidden="true"><defs><linearGradient id="lgc" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f0473d"/><stop offset="1" stop-color="#d62318"/></linearGradient></defs><rect width="512" height="512" rx="116" fill="url(#lgc)"/><path d="M361 332 A130 130 0 1 1 361 180" fill="none" stroke="#fff" stroke-width="64" stroke-linecap="round"/></svg>';
+  function resolveMemberByName(name) {
+    name = String(name || "").trim(); if (!name) return null;
+    var cand = [];
+    (CFG.roster || []).forEach(function (r) { if (r.name === name) cand.push(r.id); });
+    allClubs().forEach(function (c) { (c.roster || []).forEach(function (r) { if (r.name === name) cand.push(r.id); }); });
+    var dr = obj(DB.roster); for (var cid in dr) { var rs = dr[cid] || {}; for (var id in rs) { if (rs[id] && rs[id].name === name) cand.push(id); } }
+    var mem = obj(DB.members); for (var mid in mem) { if (mem[mid] && mem[mid].name === name) cand.push(mid); }
+    var uniq = cand.filter(function (v, i) { return cand.indexOf(v) === i; });
+    if (!uniq.length) return null;
+    var claimed = uniq.filter(function (id) { return (obj(DB.members)[id] || {}).pin; });
+    return { id: claimed.length ? claimed[0] : uniq[0], name: name };
+  }
+  function myClubs() { return allClubs().filter(function (c) { return clubRoster(c.id).some(function (r) { return r.id === me; }); }); }
+  function renderLogin() {
+    $("#app-header").innerHTML = ""; $("#app-nav").innerHTML = ""; $("#app-main").innerHTML = ""; setChrome(true);
+    var g = $("#gate"); g.classList.remove("hidden"); g.innerHTML = loginCard();
+    bindPin($("#i-pin"), $("#pin-cells"), $("#pin-err"));
+    var nf = $("#i-loginname"); if (nf) try { nf.focus(); } catch (e) {}
+  }
+  function loginCard() {
+    return '<div class="gate-card login-card">' +
+      '<div class="login-logo">' + LOGO_C + '</div>' +
+      '<div class="login-brand">크루핏</div>' +
+      '<p class="gate-p">내게 딱 맞는 동호회<br>이름과 인증번호로 로그인하세요.</p>' +
+      '<div class="fld"><label>이름</label><input type="text" id="i-loginname" placeholder="이름을 입력하세요" autocomplete="off"></div>' +
+      '<div class="fld"><label>인증번호 (4자리)</label>' + pinCellsHtml("i-pin", "pin-cells") + '</div>' +
+      '<div id="login-err" class="pin-err"></div>' +
+      '<button class="btn-pri btn-block" data-action="login-submit">로그인</button>' +
+      '<p class="gate-p" style="margin-top:14px;font-size:12px">처음이세요? 이름 입력 후 원하는 인증번호를 정하면 가입돼요. 인증번호를 잊었다면 운영진에게 초기화를 요청하세요.</p>' +
+      "</div>";
+  }
   function renderGate() {
     var g = $("#gate"); g.classList.remove("hidden");
-    if (me && (obj(DB.members)[me] || {}).claimed && sessionMemberIds().indexOf(me) < 0 && clubRoster().some(function (r) { return r.id === me; })) { g.innerHTML = gateNotMember(); return; }
-    if (intro.step === "newname") g.innerHTML = gateNewName();
-    else if (intro.step === "pin" && intro.pick) g.innerHTML = gatePin();
-    else if (intro.step === "profile" && intro.pick) g.innerHTML = gateProfile();
-    else g.innerHTML = gateName();
-    bindPin($("#i-pin"), $("#pin-cells"), $("#pin-err"));
+    $("#app-header").innerHTML = ""; $("#app-nav").innerHTML = ""; setChrome(true);
+    g.innerHTML = gateNotMember();
   }
   function gateNotMember() {
     var sess = currentSession() || {};
@@ -636,13 +665,14 @@
      상위(허브) 페이지 — 세션 목록
      ============================================================ */
   function viewClubs() {
-    var list = allClubs(), h = "";
+    var list = myClubs(), h = "";
     if (Store.mode === "demo") h += '<div class="demo-note">⚠️ <b>오프라인 임시 모드</b> — 실시간 연결이 안 돼, 입력 내용이 이 기기에만 저장돼요. <button class="link" data-action="reload-app">새로고침</button> 후 다시 시도해 주세요.</div>';
     h += '<div class="hub-head"><h1>동호회</h1></div>';
     h += '<div class="list-grid sess-grid">';
     list.forEach(function (c) { h += clubCard(c); });
     if (isMeAdmin()) h += '<button class="card sess-add" data-action="create-club">' + icon("plus", 24) + "<span>동호회 개설</span></button>";
     h += "</div>";
+    if (!list.length && !isMeAdmin()) h += '<div class="empty-msg">아직 속한 동호회가 없어요.<br>동호회 운영진에게 초대를 요청하세요.</div>';
     return '<div class="hub-wrap">' + h + "</div>";
   }
   function clubCard(c) {
@@ -1491,6 +1521,24 @@
     var a = t.getAttribute("data-action");
 
     /* 인트로 */
+    if (a === "login-submit") {
+      var lerr = $("#login-err"), lnf = $("#i-loginname"), lpf = $("#i-pin");
+      var lnm = ((lnf || {}).value || "").trim(), lpin = ((lpf || {}).value || "").replace(/\D/g, "");
+      if (!lnm) { if (lerr) lerr.textContent = "이름을 입력하세요."; return; }
+      if (lpin.length !== 4) { if (lerr) lerr.textContent = "인증번호 4자리를 입력하세요."; return; }
+      var lhit = resolveMemberByName(lnm);
+      if (!lhit) { if (lerr) lerr.textContent = "등록된 이름이 없어요. 동호회 운영진에게 등록을 요청하세요."; return; }
+      var ldm = obj(DB.members)[lhit.id] || {};
+      if (ldm.pin) {
+        if (hashPin(lpin) === ldm.pin) { me = lhit.id; localStorage.setItem("srk_me", me); render(); }
+        else { if (lerr) lerr.textContent = "인증번호가 달라요. 다시 입력해주세요."; if (lpf) lpf.value = ""; paintPinCells($("#pin-cells"), ""); }
+      } else {
+        Store.update("members/" + lhit.id, { name: lhit.name, pin: hashPin(lpin), claimed: true, claimedAt: Date.now() });
+        DB.members = DB.members || {}; DB.members[lhit.id] = Object.assign({}, ldm, { name: lhit.name, pin: hashPin(lpin), claimed: true });
+        me = lhit.id; localStorage.setItem("srk_me", me); render();
+      }
+      return;
+    }
     if (a === "pick-name") { intro.pick = t.getAttribute("data-id"); intro.car = !!(obj(DB.members)[intro.pick] || {}).hasCar; intro.step = "pin"; renderGate(); return; }
     if (a === "self-join") { intro.step = "newname"; intro.pick = null; intro.newName = null; renderGate(); var nf = $("#i-newname"); if (nf) nf.focus(); return; }
     if (a === "self-join-back") { intro.step = "name"; intro.pick = null; intro.newName = null; renderGate(); return; }
@@ -1526,7 +1574,7 @@
     if (a === "save-profile") { var pon = $("#p-car-yes").classList.contains("on"); var upd = { station: cleanStation($("#p-station").value), hasCar: pon }; Store.update("members/" + me, upd); if (pon) Store.set(rideWritePath(me), null); closeModal(); return; }
     if (a === "switch-me") {
       if (confirm("이 기기에서 로그아웃할까요?\n(이름·인증번호는 그대로 유지되고, 언제든 인증번호로 다시 입장할 수 있어요)")) {
-        me = null; localStorage.removeItem("srk_me"); intro.step = "name"; intro.pick = null; intro.newName = null; closeModal(); renderGate();
+        me = null; localStorage.removeItem("srk_me"); intro.step = "name"; intro.pick = null; intro.newName = null; state.screen = "clubs"; state.clubId = null; closeModal(); render();
       }
       return;
     }
