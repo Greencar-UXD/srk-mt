@@ -31,6 +31,37 @@ window.SRK_CONFIG = {
     imageQuality: 0.82    // JPEG 품질 (0~1)
   },
 
+  /* ── 1-4) 클라이밍 암장 색깔 난이도 (색 → V 환산) ─────────────────
+     ⚠️ 색→V는 암장·세팅·시즌마다 다른 '근사치'. 아래는 조정 가능한 기본값이고,
+        기록은 원본(암장+색)도 함께 저장하므로 V값은 언제든 재보정 가능합니다.
+     - colors 있음 → 그 암장 전용 색표 사용
+     - base:true   → 공용 기본 스케일(climbGradeBase) 사용 (실세팅으로 보정 필요)
+     - manual:true → 색 대신 V등급 직접 선택 + 암장명 자유 입력 */
+  climbGradeBase: [
+    { key: "white",  label: "흰색", v: 0 }, { key: "yellow", label: "노랑", v: 1 },
+    { key: "orange", label: "주황", v: 2 }, { key: "green",  label: "초록", v: 3 },
+    { key: "blue",   label: "파랑", v: 4 }, { key: "red",    label: "빨강", v: 5 },
+    { key: "purple", label: "보라", v: 6 }, { key: "grey",   label: "회색", v: 7 },
+    { key: "black",  label: "검정", v: 8 }
+  ],
+  climbGyms: [
+    // 더클라임 — 저·중급이 촘촘(초록~빨강 ≤ V3). 2025 색상+숫자 병행 체계로 변경됨(현 세팅 확인 권장)
+    { id: "theclimb", name: "더클라임", colors: [
+      { key: "white",  label: "흰색", v: 0 }, { key: "yellow", label: "노랑", v: 1 },
+      { key: "green",  label: "초록", v: 2 }, { key: "blue",   label: "파랑", v: 3 },
+      { key: "red",    label: "빨강", v: 3 }, { key: "purple", label: "보라", v: 4 },
+      { key: "grey",   label: "회색", v: 5 }, { key: "black",  label: "검정", v: 6 }
+    ] },
+    // ↓ 자주 가는 체인 — 우선 공용 기본 스케일. 각 암장 실제 색표로 보정하세요.
+    { id: "climbingpark",  name: "클라이밍파크",   base: true },
+    { id: "sonsangwon",    name: "손상원클라이밍", base: true },
+    { id: "seoulsup",      name: "서울숲클라이밍", base: true },
+    { id: "peakers",       name: "피커스",         base: true },
+    { id: "seoulboulders", name: "서울볼더스",     base: true },
+    { id: "theplastic",    name: "더플라스틱",     base: true },
+    { id: "etc",           name: "기타 (직접 입력)", manual: true }
+  ],
+
   /* ── 2) 여행 정보 ─────────────────────────────────────────── */
   trip: {
     title:    "슈퍼리치키드 하계 MT",
