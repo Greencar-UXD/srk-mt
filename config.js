@@ -31,6 +31,64 @@ window.SRK_CONFIG = {
     imageQuality: 0.82    // JPEG 품질 (0~1)
   },
 
+  /* ── 1-4) 클라이밍 암장 색깔 난이도 (색 → V 환산) ─────────────────
+     ⚠️ 색→V는 암장·세팅·시즌마다 다른 '근사치'. 아래는 조정 가능한 기본값이고,
+        기록은 원본(암장+색)도 함께 저장하므로 V값은 언제든 재보정 가능합니다.
+     - colors 있음 → 그 암장 전용 색표 사용
+     - base:true   → 공용 기본 스케일(climbGradeBase) 사용 (실세팅으로 보정 필요)
+     - manual:true → 색 대신 V등급 직접 선택 + 암장명 자유 입력 */
+  climbGradeBase: [
+    { key: "white",  label: "흰색", v: 0 }, { key: "yellow", label: "노랑", v: 1 },
+    { key: "orange", label: "주황", v: 2 }, { key: "green",  label: "초록", v: 3 },
+    { key: "blue",   label: "파랑", v: 4 }, { key: "red",    label: "빨강", v: 5 },
+    { key: "purple", label: "보라", v: 6 }, { key: "grey",   label: "회색", v: 7 },
+    { key: "black",  label: "검정", v: 8 }
+  ],
+  climbGyms: [
+    // 더클라임 — 저·중급이 촘촘(초록~빨강 ≤ V3). 2025 색상+숫자 병행 체계로 변경됨(현 세팅 확인 권장)
+    { id: "theclimb", name: "더클라임", colors: [
+      { key: "white",  label: "흰색", v: 0 }, { key: "yellow", label: "노랑", v: 1 },
+      { key: "green",  label: "초록", v: 2 }, { key: "blue",   label: "파랑", v: 3 },
+      { key: "red",    label: "빨강", v: 3 }, { key: "purple", label: "보라", v: 4 },
+      { key: "grey",   label: "회색", v: 5 }, { key: "black",  label: "검정", v: 6 }
+    ] },
+    // ↓ 자주 가는 체인 — 색 순서는 리뷰/블로그 출처. 색→V 절댓값은 근사치(보정 가능).
+    // 피커스 — 무지개 순(빨강이 가장 쉬움!). 다른 암장과 정반대라 주의
+    { id: "peakers", name: "피커스", colors: [
+      { key: "red",    label: "빨강", v: 0 }, { key: "orange", label: "주황", v: 1 },
+      { key: "yellow", label: "노랑", v: 2 }, { key: "green",  label: "초록", v: 3 },
+      { key: "blue",   label: "파랑", v: 4 }, { key: "navy",   label: "남색", v: 5 },
+      { key: "purple", label: "보라", v: 6 }, { key: "grey",   label: "회색", v: 7 },
+      { key: "black",  label: "검정", v: 8 }
+    ] },
+    // 서울숲클라이밍 — 핑크가 가장 쉬움, 검정 최고난도(10단계). 상위 V는 근사치
+    { id: "seoulsup", name: "서울숲클라이밍", colors: [
+      { key: "pink",   label: "핑크", v: 0 }, { key: "red",    label: "빨강", v: 1 },
+      { key: "orange", label: "주황", v: 2 }, { key: "yellow", label: "노랑", v: 3 },
+      { key: "green",  label: "초록", v: 4 }, { key: "blue",   label: "파랑", v: 5 },
+      { key: "navy",   label: "남색", v: 6 }, { key: "purple", label: "보라", v: 7 },
+      { key: "brown",  label: "갈색", v: 8 }, { key: "black",  label: "검정", v: 9 }
+    ] },
+    // 손상원클라이밍 — 출처: 을지로점 리뷰. ⚠️ 검정이 중상위·핑크 최상위로 다소 이례적 — 현장 확인 권장
+    { id: "sonsangwon", name: "손상원클라이밍", colors: [
+      { key: "white",  label: "흰색", v: 0 }, { key: "yellow", label: "노랑", v: 1 },
+      { key: "green",  label: "초록", v: 2 }, { key: "blue",   label: "파랑", v: 3 },
+      { key: "red",    label: "빨강", v: 4 }, { key: "black",  label: "검정", v: 5 },
+      { key: "grey",   label: "회색", v: 6 }, { key: "brown",  label: "갈색", v: 7 },
+      { key: "pink",   label: "핑크", v: 8 }
+    ] },
+    // 클라이밍파크 — 출처: 종로점 리뷰. ⚠️ 노랑 최저 · 흰색 최고로 이례적(흰색=고난도) — 현장 확인 권장
+    { id: "climbingpark", name: "클라이밍파크", colors: [
+      { key: "yellow", label: "노랑", v: 0 }, { key: "pink",   label: "핑크", v: 1 },
+      { key: "blue",   label: "파랑", v: 2 }, { key: "red",    label: "빨강", v: 3 },
+      { key: "purple", label: "보라", v: 4 }, { key: "brown",  label: "갈색", v: 5 },
+      { key: "grey",   label: "회색", v: 6 }, { key: "black",  label: "검정", v: 7 },
+      { key: "white",  label: "흰색", v: 8 }
+    ] },
+    { id: "etc",           name: "기타 (직접 입력)", manual: true }
+    // 서울볼더스·더플라스틱은 색표 미확인으로 제외 — '기타'로 입력. 색표 확보 시 추가
+  ],
+
   /* ── 2) 여행 정보 ─────────────────────────────────────────── */
   trip: {
     title:    "슈퍼리치키드 하계 MT",

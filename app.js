@@ -195,6 +195,11 @@
   }
   function fmtAvg(v) { return (Math.round((v || 0) * 1000) / 1000).toFixed(3); }
   function fmtGrade(g) { return "V" + (g || 0); }
+  // 클라이밍 암장 색깔 난이도 (config의 climbGyms / climbGradeBase)
+  function climbGymList() { return CFG.climbGyms || []; }
+  function climbGymById(id) { var l = climbGymList(); for (var i = 0; i < l.length; i++) if (l[i].id === id) return l[i]; return null; }
+  function climbGymColors(g) { return (g && g.colors) ? g.colors : (CFG.climbGradeBase || []); }
+  function climbColorLabel(gymId, colorKey) { var g = climbGymById(gymId); if (!g || !colorKey) return ""; var cs = climbGymColors(g); for (var i = 0; i < cs.length; i++) if (cs[i].key === colorKey) return cs[i].label; return ""; }
   function fmtPace(p) { if (!p || !isFinite(p)) return "-"; var m = Math.floor(p), sec = Math.round((p - m) * 60); if (sec === 60) { m++; sec = 0; } return m + "'" + (sec < 10 ? "0" + sec : sec) + '"'; }
   function clubRecords(cid, kind) { cid = cid || state.clubId; var m = obj((obj(DB.clubrecords) || {})[cid]); return Object.keys(m).map(function (k) { var x = Object.assign({}, m[k]); x._key = k; return x; }).filter(function (x) { return !kind || x.kind === kind; }).sort(function (a, b) { return (b.ts || 0) - (a.ts || 0); }); }
   function clubNotices(cid) { cid = cid || state.clubId; var m = obj((obj(DB.clubnotices) || {})[cid]); return Object.keys(m).map(function (k) { var x = Object.assign({}, m[k]); x._key = k; return x; }).sort(function (a, b) { return ((b.pinned ? 1e15 : 0) + (b.ts || 0)) - ((a.pinned ? 1e15 : 0) + (a.ts || 0)); }); }
@@ -965,7 +970,7 @@
     var recs = clubRecords(cid, "climb");
     if (recs.length) {
       h += '<h2 class="sec" style="margin-top:24px">최근 완등</h2><div class="match-list">';
-      recs.slice(0, 12).forEach(function (r) { var canDel = (r.by === me || canManage(me)); h += '<div class="match-row"><span class="mt-p win">' + esc(memberName(r.member)) + '</span><span class="mt-vs">' + fmtGrade(r.grade) + '</span><span class="mt-p right">' + (r.gym ? esc(r.gym) : "") + '</span>' + (canDel ? '<button class="tl-del" data-action="del-record" data-id="' + r._key + '" aria-label="삭제">×</button>' : "") + "</div>"; });
+      recs.slice(0, 12).forEach(function (r) { var canDel = (r.by === me || canManage(me)); var cl = r.color ? climbColorLabel(r.gymId, r.color) : ""; var rt = (cl ? cl + " · " : "") + (r.gym || ""); h += '<div class="match-row"><span class="mt-p win">' + esc(memberName(r.member)) + '</span><span class="mt-vs">' + (cl ? '<span class="cc-dot ' + r.color + '"></span>' : "") + fmtGrade(r.grade) + '</span><span class="mt-p right">' + esc(rt) + '</span>' + (canDel ? '<button class="tl-del" data-action="del-record" data-id="' + r._key + '" aria-label="삭제">×</button>' : "") + "</div>"; });
       h += "</div>";
     }
     return h;
@@ -1160,20 +1165,50 @@
   function formClimb(sessionId) {
     var cid = state.clubId; if (!rankCanRec(cid)) { alert("크루원으로 입장한 뒤 기록할 수 있어요."); return; }
     var sid = sessionId || "";
-    var grades = ""; for (var g = 0; g <= 12; g++) grades += '<option value="' + g + '">V' + g + "</option>";
+    var gymOpts = climbGymList().map(function (g) { return '<option value="' + g.id + '">' + esc(g.name) + "</option>"; }).join("");
     openModal("<h2>완등 기록</h2>" +
-      '<p class="hint" style="margin:-4px 0 10px">V스케일 볼더링 기준</p>' +
+      '<p class="hint" style="margin:-4px 0 10px">암장을 고르고 색깔을 누르면 V등급으로 환산돼요</p>' +
       '<label>멤버</label><select id="c-member">' + rankMemberOpt(cid, me) + "</select>" +
-      '<label>난이도</label><select id="c-grade">' + grades + "</select>" +
-      '<label>암장 (선택)</label><input id="c-gym" maxlength="30" placeholder="예: 더클라임 강남">' +
+      '<label>암장</label><select id="c-gym-sel">' + gymOpts + "</select>" +
+      '<div id="c-color-wrap"></div>' +
+      '<input type="hidden" id="c-grade" value="0"><input type="hidden" id="c-color" value="">' +
       '<input type="hidden" id="c-session" value="' + esc(sid) + '">' +
       '<div class="modal-foot"><button class="btn-line" data-action="close-modal">취소</button><button class="btn-pri" data-action="save-climb">기록</button></div>');
+    var sel = $("#c-gym-sel");
+    if (sel) { sel.addEventListener("change", function () { renderClimbColors(this.value); }); renderClimbColors(sel.value); }
+  }
+  function renderClimbColors(gymId) {
+    var wrap = $("#c-color-wrap"); if (!wrap) return;
+    var cg = $("#c-grade"), cc = $("#c-color"); if (cg) cg.value = "0"; if (cc) cc.value = "";
+    var g = climbGymById(gymId);
+    if (!g || g.manual) {  // 직접 입력(기타) — 색표 없는 암장
+      var grades = ""; for (var i = 0; i <= 12; i++) grades += '<option value="' + i + '">V' + i + "</option>";
+      wrap.innerHTML = '<label>난이도 (V스케일)</label><select id="c-grade-manual">' + grades + "</select>" +
+        '<label>암장명 (선택)</label><input id="c-gym-name" maxlength="30" placeholder="예: 비블럭 연남">';
+      return;
+    }
+    var chips = climbGymColors(g).map(function (c) {
+      return '<button type="button" class="climb-color" data-action="pick-climb-color" data-v="' + c.v + '" data-color="' + c.key + '"><span class="cc-dot ' + c.key + '"></span>' + esc(c.label) + ' <i>V' + c.v + "</i></button>";
+    }).join("");
+    wrap.innerHTML = '<label>색깔 난이도</label><div class="climb-colors">' + chips + "</div>" +
+      '<div class="climb-pick" id="c-pick-label">색을 누르면 V등급으로 환산돼요</div>';
   }
   function saveClimb() {
     var member = ($("#c-member") || {}).value; if (!member) return;
     var sid = (($("#c-session") || {}).value) || null;
+    var g = climbGymById((($("#c-gym-sel") || {}).value) || "");
+    var grade, gymName, color = "", gymId = g ? g.id : "";
+    if (!g || g.manual) {  // 직접 입력
+      grade = +(($("#c-grade-manual") || {}).value) || 0;
+      gymName = clampStr(($("#c-gym-name") || {}).value, 30);
+    } else {               // 암장 색 → V 환산
+      color = (($("#c-color") || {}).value) || "";
+      if (!color) { alert("색깔(난이도)을 선택하세요"); return; }
+      grade = +(($("#c-grade") || {}).value) || 0;
+      gymName = g.name;
+    }
     armRetry(function () { formClimb(sid); });
-    saveRecord({ ts: Date.now(), by: me, kind: "climb", member: member, grade: +(($("#c-grade") || {}).value) || 0, gym: clampStr(($("#c-gym") || {}).value, 30), sessionId: sid });
+    saveRecord({ ts: Date.now(), by: me, kind: "climb", member: member, grade: grade, gym: gymName, gymId: gymId, color: color, sessionId: sid });
   }
   function formRun(sessionId) {
     var cid = state.clubId; if (!rankCanRec(cid)) { alert("크루원으로 입장한 뒤 기록할 수 있어요."); return; }
@@ -2066,6 +2101,13 @@
     if (a === "sess-part-none") { ev.preventDefault(); document.querySelectorAll(".f-sess-part").forEach(function (c) { c.checked = false; }); return; }
     if (a === "pick-emoji") { var em = t.getAttribute("data-e"); var ew = $("#f-emoji"); if (ew) ew.value = em; Array.prototype.forEach.call(document.querySelectorAll("#f-emoji-wrap .emoji-b"), function (b) { b.classList.toggle("on", b.getAttribute("data-e") === em); }); return; }
     if (a === "pick-accent") { var ac = t.getAttribute("data-a"); var aw = $("#f-saccent"); if (aw) aw.value = ac; Array.prototype.forEach.call(t.parentNode.querySelectorAll(".seg-b"), function (b) { b.classList.toggle("on", b.getAttribute("data-a") === ac); }); return; }
+    if (a === "pick-climb-color") {
+      var pv = t.getAttribute("data-v"), pc = t.getAttribute("data-color");
+      var cg2 = $("#c-grade"), cc2 = $("#c-color"); if (cg2) cg2.value = pv; if (cc2) cc2.value = pc;
+      Array.prototype.forEach.call(t.parentNode.querySelectorAll(".climb-color"), function (b) { b.classList.toggle("on", b === t); });
+      var pl = $("#c-pick-label"); if (pl) pl.innerHTML = '선택: <b>' + esc(climbColorLabel((($("#c-gym-sel") || {}).value), pc)) + "</b> ≈ V" + pv;
+      return;
+    }
     if (a === "pick-vis") { var vv = t.getAttribute("data-v"); var vw = $("#f-cvis"); if (vw) vw.value = vv; Array.prototype.forEach.call(t.parentNode.querySelectorAll(".seg-b"), function (b) { b.classList.toggle("on", b.getAttribute("data-v") === vv); }); return; }
     if (a === "save-session") {
       if (!isMeAdmin()) return;
