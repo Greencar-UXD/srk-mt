@@ -727,16 +727,16 @@
       '<p class="login-sub" id="login-sub">이름과 인증번호를 입력하세요</p>' +
       '<div class="fld"><label>이름</label><input type="text" id="i-loginname" placeholder="이름을 입력하세요" autocomplete="off"></div>' +
       '<div class="fld"><label id="i-pin-label">인증번호 (4자리)</label>' + pinCellsHtml("i-pin", "pin-cells") + '</div>' +
+      '<p class="login-foot" id="login-foot">인증번호를 잊었다면 운영진에게 초기화를 요청하세요</p>' +
       '<div id="login-err" class="pin-err"></div>' +
       '<button class="btn-pri btn-block" id="login-btn" data-action="login-submit">로그인</button>' +
-      '<p class="login-foot">인증번호를 잊었다면 운영진에게 초기화를 요청하세요</p>' +
       "</div>";
   }
   // 이름 입력에 따라 타이틀·서브타이틀·버튼을 '로그인(기존)' vs '가입(첫 입장)'으로 전환
   function updateLoginMode() {
     var nf = $("#i-loginname"); if (!nf) return;
     var nm = (nf.value || "").trim();
-    var title = $("#login-title"), sub = $("#login-sub"), btn = $("#login-btn"), lab = $("#i-pin-label");
+    var title = $("#login-title"), sub = $("#login-sub"), btn = $("#login-btn"), lab = $("#i-pin-label"), foot = $("#login-foot");
     var hit = nm ? resolveMemberByName(nm) : null;
     var dm = hit ? (obj(DB.members)[hit.id] || {}) : null;
     if (hit && dm && dm.pin) {            // 기존 회원 — 로그인
@@ -758,6 +758,7 @@
       if (lab) lab.textContent = "인증번호 (4자리)";
       if (btn) btn.textContent = "로그인";
     }
+    if (foot) foot.style.display = (hit && dm && !dm.pin) ? "none" : "";  // 첫 입장(가입)엔 '초기화 요청' 안내 숨김
     paintPinCells($("#pin-cells"), (($("#i-pin") || {}).value) || "");
   }
   function renderGate() {
