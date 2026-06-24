@@ -238,6 +238,22 @@
   function restoreDraft(v) { var r = document.getElementById("modal-root"); if (!r || !v) return; Object.keys(v).forEach(function (id) { var el = null; try { el = r.querySelector("#" + (window.CSS && CSS.escape ? CSS.escape(id) : id)); } catch (e) {} if (el) { if (el.type === "checkbox") el.checked = v[id]; else el.value = v[id]; } }); }
   function armRetry(reopen) { var draft = captureDraft(); pendingRetry = function () { try { reopen(); restoreDraft(draft); var m = document.querySelector("#modal-root .modal"); if (m && !m.querySelector(".retry-warn")) { var d = document.createElement("div"); d.className = "retry-warn"; d.textContent = "저장에 실패했어요. 입력값은 그대로 두었어요 — 연결을 확인하고 다시 시도해 주세요."; m.insertBefore(d, m.firstChild); } } catch (e) {} }; if (_retryTimer) clearTimeout(_retryTimer); _retryTimer = setTimeout(function () { pendingRetry = null; }, 8000); }
   function onWriteError(e) { try { console.warn("write fail", e); } catch (_) {} if (pendingRetry) { var r = pendingRetry; pendingRetry = null; try { r(); } catch (_) {} } var n = Date.now(); if (n - _lastWErr < 4000) return; _lastWErr = n; }
+  // 루트 리스너가 권한오류(PERMISSION_DENIED)로 취소될 때 — 보안 규칙을 막 조였는데 이 탭은
+  // 옛 코드(익명 인증 없음)를 캐시 중이거나, 콘솔에서 익명 인증을 안 켠 경우. 무음 블랙스크린
+  // 대신 새로고침 안내 배너를 띄운다. (일시적 네트워크 끊김은 리스너를 취소하지 않아 여기 안 옴)
+  function onReadDenied(err) {
+    try {
+      var code = String((err && (err.code || err.message)) || "").toUpperCase();
+      if (code.indexOf("PERMISSION") < 0 && code.indexOf("DENIED") < 0) return;
+      if (document.getElementById("perm-denied")) return;
+      var d = document.createElement("div");
+      d.id = "perm-denied";
+      d.style.cssText = "position:fixed;left:0;right:0;top:0;z-index:99999;background:#b91c1c;color:#fff;padding:12px 16px;font:600 14px/1.5 -apple-system,system-ui,sans-serif;text-align:center;box-shadow:0 2px 8px rgba(0,0,0,.25)";
+      d.innerHTML = '연결 권한이 만료됐어요. 새로고침하면 다시 연결돼요. <button id="perm-denied-btn" style="margin-left:8px;border:0;border-radius:6px;padding:6px 12px;background:#fff;color:#b91c1c;font-weight:700;cursor:pointer">새로고침</button>';
+      document.body.appendChild(d);
+      var b = document.getElementById("perm-denied-btn"); if (b) b.onclick = function () { location.reload(); };
+    } catch (_) {}
+  }
   var Store = (function () {
     var fb = CFG.firebase || {};
     /* 데이터 안전: 프로덕션(github.io)에서만 클라우드. 로컬·Codespaces·?demo=1 은 자동 데모(localStorage)라
@@ -250,15 +266,21 @@
 
     if (useCloud) {
       var db = firebase.database();
+      // 익명 인증: DB 보안 규칙을 'auth != null'로 잠그기 위한 토큰을 받는다. 익명 로그인이
+      // 실패해도(콘솔에서 익명 인증 미사용·오프라인 등) 리스너는 그대로 붙여 — 규칙이 아직
+      // 열려 있으면 정상 동작하고, 규칙을 조인 뒤라면 권한오류가 콘솔에 찍혀 원인을 알 수 있다.
+      var authReady = (window.firebase && firebase.auth)
+        ? firebase.auth().signInAnonymously().catch(function (e) { try { console.warn("[crewfit] 익명 인증 실패:", e && e.code); } catch (_) {} })
+        : Promise.resolve();
       return {
         mode: "cloud",
-        onRoot: function (cb) { db.ref("/").on("value", function (s) { cb(s.val() || {}); }); },
+        onRoot: function (cb) { authReady.then(function () { db.ref("/").on("value", function (s) { cb(s.val() || {}); }, onReadDenied); }); },
         set: function (p, v) { return db.ref(p).set(v).catch(onWriteError); },
         update: function (p, v) { return db.ref(p).update(v).catch(onWriteError); },
         push: function (p, v) { var r = db.ref(p).push(); r.set(v).catch(onWriteError); return r.key; },
         remove: function (p) { return db.ref(p).remove().catch(onWriteError); },
         tx: function (p, fn) { return db.ref(p).transaction(fn).then(function (r) { return r.committed; }); },
-        seedRoot: function (builder) { db.ref("/").transaction(function (cur) { if (cur && cur.members && Object.keys(cur.members).length) return; return builder(); }); }
+        seedRoot: function (builder) { authReady.then(function () { db.ref("/").transaction(function (cur) { if (cur && cur.members && Object.keys(cur.members).length) return; return builder(); }); }); }
       };
     }
 
