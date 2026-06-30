@@ -1,15 +1,15 @@
 /* ============================================================
    크루핏 (CREWFIT) — 스타일
-   컬러: Cobalt-Mono 디자인 시스템 (코발트 블루 액센트 + cool-gray 중립 램프)
+   컬러: Daniel's Design System (단일 강조색 + cool-gray 중립 램프)
          + 동호회별 팀컬러(--acc: red/blue/green/purple/orange)
    타이포: Pretendard 단일 (수치는 tabular-nums로 자릿수 정렬)
    레이아웃: 모바일 퍼스트 + PC 반응형(사이드바)
    ============================================================ */
 :root {
   /* ============================================================
-     Cobalt — Mono 디자인 시스템 (Greencar-UXD/design-system) 적용
-     · 구조(중립 cool 램프 · 시맨틱 토큰 · 4px 스케일 · 그림자 · 타이포)는 코발트 그대로
-     · 단일 액센트만 SRK 브랜드 레드로 치환 (코발트 블루 → SRK 레드)
+     Daniel's Design System (Greencar-UXD/design-system) 적용
+     · 구조(중립 cool 램프 · 시맨틱 토큰 · 4px 스케일 · 그림자 · 타이포)는 디자인 시스템 그대로
+     · 단일 액센트만 SRK 브랜드 레드로 치환 (기본 강조색 → SRK 레드)
      ============================================================ */
   /* ---- Neutral ramp (cool gray) ---- */
   --gray-0:#ffffff; --gray-50:#f7f8f9; --gray-100:#eceef1; --gray-200:#dde0e5;
@@ -19,7 +19,7 @@
   --red-50:#fdecea; --red-100:#fbd9d6; --red-200:#f6ada6; --red-300:#f07d74;
   --red-400:#ec534a; --red-500:#e5302a; --red-600:#c5251f; --red-700:#a11d18;
   --red-800:#7d1813; --red-900:#5f120f;
-  /* ---- Cobalt ramp = 크루핏 시그니처 액센트 (디자인 시스템) ---- */
+  /* ---- 강조색 램프 = 크루핏 시그니처 액센트 (디자인 시스템) ---- */
   --cobalt-50:#eef2ff; --cobalt-100:#dde5ff; --cobalt-200:#bccbff; --cobalt-300:#93acff;
   --cobalt-400:#5e84ff; --cobalt-500:#2d5bff; --cobalt-600:#2447e0; --cobalt-700:#1f3bb8;
   --cobalt-800:#1c328f; --cobalt-900:#1a2d70;
@@ -56,7 +56,7 @@
   --font-mono: var(--font-text);     /* 전부 Pretendard로 통일 — 수치 정렬은 tabular-nums로 유지 */
   --font-display: var(--font-text);
 
-  /* ---- 레거시 별칭 (기존 컴포넌트 규칙이 그대로 동작하도록 코발트 토큰에 매핑) ---- */
+  /* ---- 레거시 별칭 (기존 컴포넌트 규칙이 그대로 동작하도록 강조색 토큰에 매핑) ---- */
   --bg:var(--surface-page); --surface:var(--surface-card);
   --ink:var(--text-primary); --muted:var(--text-secondary); --line:var(--border);
   --pri:var(--accent); --pri-d:var(--accent-hover);
@@ -71,7 +71,7 @@
   color-scheme: light dark;
   font-family: var(--font-text);
 }
-/* ===== Semantic — DARK (코발트 다크 매핑, 액센트=SRK 레드 라이트닝) ===== */
+/* ===== Semantic — DARK (강조색 다크 매핑, 액센트=SRK 레드 라이트닝) ===== */
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme]) {
     --text-primary:#f3f4f6; --text-secondary:#9aa1ab; --text-tertiary:#6b727d; --text-inverse:var(--gray-900);
@@ -99,7 +99,7 @@
 html, body { margin: 0; padding: 0; }
 body {
   background: var(--bg); color: var(--ink);
-  font-size: 0.875rem; line-height: 1.5; -webkit-font-smoothing: antialiased;
+  font-size: 1rem; line-height: 1.5; -webkit-font-smoothing: antialiased;
 }
 a { color: var(--pri); text-decoration: none; }
 button { font-family: inherit; cursor: pointer; border: none; background: none; color: inherit; }
@@ -249,11 +249,11 @@ h1, h2 { margin: 0; }
 
 /* ---------- 홈 히어로 ---------- */
 .hero {
-  background: linear-gradient(135deg, var(--pri-d) 0%, var(--pri) 62%, var(--pri-d) 120%);
+  background: var(--pri);   /* flat accent — canon bans gradients */
   color: #fff; border-radius: 20px; padding: 20px; margin-bottom: 16px;
   position: relative; overflow: hidden;
 }
-.hero::after { content: ""; position: absolute; right: -8px; bottom: -16px; width: 88px; height: 88px; opacity: .16; background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='1.6' stroke-linejoin='round'%3E%3Cpath d='M3 19h18L14 6l-4 7-2.5-3L3 19z'/%3E%3C/svg%3E") center/contain no-repeat; }
+/* hero decorative watermark removed — canon: flat surfaces, no decorative blobs */
 .hero-dday { display: inline-block; background: rgba(255,255,255,.24); font-weight: 800; font-size: 0.75rem; padding: 4px 12px; border-radius: 999px; letter-spacing: .5px; }
 .hero-title { font-size: 1.625rem; font-weight: 800; margin-top: 8px; letter-spacing: -.6px; line-height: 1.2; }
 .hero-sub { font-size: 0.75rem; opacity: .92; margin-bottom: 12px; }
@@ -322,7 +322,7 @@ h1, h2 { margin: 0; }
 /* 읽기전용 일정 상세 */
 .sinfo { max-width: 760px; margin: 0 auto; }
 .sinfo-hero { position: relative; overflow: hidden; border-radius: 20px; padding: 24px 20px; margin-bottom: 16px; color: #fff;
-  background: linear-gradient(135deg, var(--acc) 0%, var(--acc2) 55%, var(--acc) 130%); }
+  background: var(--acc); }   /* flat club color — canon bans gradients (club hue kept as scoped identity) */
 .sih-emoji { font-size: 2.5rem; line-height: 1; display: block; }
 .sih-badge { display: inline-block; margin-top: 12px; background: rgba(255,255,255,.24); font-weight: 800; font-size: 0.75rem;
   padding: 4px 12px; border-radius: 999px; letter-spacing: .5px; }
@@ -516,10 +516,10 @@ h1, h2 { margin: 0; }
 .rsvp-chip.on.in { color: #fff; background: var(--accent); border-color: var(--accent); }
 .rsvp-chip.on.maybe { color: var(--accent); background: color-mix(in srgb, var(--accent) 12%, transparent); border-color: color-mix(in srgb, var(--accent) 35%, transparent); }
 .rsvp-chip.on.out { color: var(--muted); background: var(--surface); border-color: var(--line); text-decoration: line-through; opacity: .85; }
-.rsvp-tally { font-size: 0.71875rem; color: var(--muted); margin-left: auto; }
+.rsvp-tally { font-size: 0.75rem; color: var(--muted); margin-left: auto; }
 .rsvp-chip.locked { opacity: .9; }
 .rsvp-meta { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 7px; }
-.rsvp-meta > span { display: inline-flex; align-items: center; gap: 4px; font-size: 0.6875rem; font-weight: 700; line-height: 1.3; border-radius: 999px; padding: 3px 9px; }
+.rsvp-meta > span { display: inline-flex; align-items: center; gap: 4px; font-size: 0.75rem; font-weight: 700; line-height: 1.3; border-radius: 999px; padding: 3px 9px; }
 .cap-badge.under { color: var(--muted); background: var(--surface); border: 1px solid var(--line); }
 .cap-badge.ok { color: var(--accent); background: color-mix(in srgb, var(--accent) 12%, transparent); }
 .cap-badge.over { color: var(--danger-600); background: var(--danger-50); }
@@ -535,7 +535,7 @@ h1, h2 { margin: 0; }
 .climb-colors { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 6px; }
 .climb-color { display: inline-flex; align-items: center; gap: 6px; font-size: 0.8125rem; font-weight: 700; color: var(--ink); background: var(--surface); border: 1px solid var(--line); border-radius: 999px; padding: 6px 12px; min-height: 0; cursor: pointer; }
 .climb-color.on { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 12%, transparent); }
-.climb-color i { font-style: normal; font-size: 0.6875rem; color: var(--muted); }
+.climb-color i { font-style: normal; font-size: 0.75rem; color: var(--muted); }
 .climb-pick { margin-top: 8px; font-size: 0.8125rem; color: var(--muted); }
 .cc-dot { width: 13px; height: 13px; border-radius: 50%; border: 1px solid rgba(0, 0, 0, .18); display: inline-block; flex: none; }
 .mt-vs .cc-dot { width: 11px; height: 11px; margin-right: 5px; vertical-align: middle; }
@@ -667,6 +667,7 @@ input:not(.pin-real):focus, select:focus, textarea:focus { box-shadow: 0 0 0 3px
     grid-template-columns: 190px minmax(0, 1fr);
     grid-template-areas: "header header" "nav main";
     padding: 0 32px;
+    align-content: start;   /* min-height:100vh가 행을 늘려 콘텐츠를 아래로 밀던 상단 빈공간 제거 */
   }
   #app-header { grid-area: header; }
   #app-header .hd-left { display: none; }      /* PC: 제목·뱃지 숨김 */
@@ -675,7 +676,7 @@ input:not(.pin-real):focus, select:focus, textarea:focus { box-shadow: 0 0 0 3px
   #app.nonav { max-width: 1200px; grid-template-columns: minmax(0, 1fr); grid-template-areas: "header" "main"; }
   #app.nonav #app-main { display: block; padding: 24px 0 60px; }
   #app.nonav #app-header .hd-brand { display: flex; }
-  .sess-grid { grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); }
+  .sess-grid { grid-template-columns: repeat(auto-fit, minmax(280px, 360px)); }
   #app-nav {
     grid-area: nav; position: sticky; top: 84px; align-self: start;
     height: max-content; max-width: none; margin: 0;
@@ -698,11 +699,11 @@ input:not(.pin-real):focus, select:focus, textarea:focus { box-shadow: 0 0 0 3px
   .seg { max-width: 560px; }
 
   /* 풀폭에서 카드 그리드는 화면 너비에 맞춰 열 수 자동 증가 */
-  .list-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 12px; align-items: start; }
+  .list-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 360px)); gap: 12px; align-items: start; }
   .list-grid > * { margin-bottom: 0; }
   .stat-row { gap: 12px; }
   .gate-grid { grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); }
-  .cp-board { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 12px; align-items: start; }
+  .cp-board { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 380px)); gap: 12px; align-items: start; }
   .cp-board > * { margin-bottom: 0; }
   .ph-grid { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; }
   .ph-bar { top: 0; }
@@ -716,8 +717,8 @@ input:not(.pin-real):focus, select:focus, textarea:focus { box-shadow: 0 0 0 3px
 
 
 /* ============================================================
-   Cobalt — Mono 컴포넌트 정합 (구조 차용 · 액센트=SRK 레드)
-   토큰 스왑 위에 코발트 컴포넌트 해부(elevation·radius·데이터 타이포)를 덧입힘.
+   Daniel's Design System 컴포넌트 정합 (구조 차용 · 액센트=SRK 레드)
+   토큰 스왑 위에 디자인 시스템 컴포넌트 해부(elevation·radius·데이터 타이포)를 덧입힘.
    ============================================================ */
 .card { box-shadow: var(--shadow-sm); border-radius: var(--radius-xl); }
 .stat { box-shadow: var(--shadow-xs); border-radius: var(--radius-lg); }
@@ -785,7 +786,7 @@ input:focus-visible, select:focus-visible, textarea:focus-visible {
   /* 허브: 760px 좁은 칼럼 → 컨테이너 풀폭으로 (세션 카드가 3열 그리드로 채워짐) */
   .hub-wrap { max-width: none; }
   .hub-head { max-width: var(--container-max); }
-  .sess-grid { grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 16px; }
+  .sess-grid { grid-template-columns: repeat(auto-fit, minmax(280px, 360px)); gap: 16px; }
   /* 읽기용 상세는 가독 폭 유지 */
   .sinfo { max-width: 760px; }
 }
@@ -826,7 +827,7 @@ input:focus-visible, select:focus-visible, textarea:focus-visible {
 .mt-p.right { text-align: right; }
 .mt-p.win { color: var(--text-primary, var(--ink)); font-weight: 700; }
 .mt-p b { font-variant-numeric: tabular-nums; }
-.mt-vs { flex: none; font-size: 0.6875rem; color: var(--text-secondary, var(--muted)); padding: 2px 6px; background: var(--surface-sunken, transparent); border-radius: 6px; }
+.mt-vs { flex: none; font-size: 0.75rem; color: var(--text-secondary, var(--muted)); padding: 2px 6px; background: var(--surface-sunken, transparent); border-radius: 6px; }
 /* 대전 입력 폼 */
 .mt-form .mt-col { padding: 12px 0; border-bottom: 1px solid var(--line); }
 .mt-3 { display: flex; gap: 8px; margin-top: 8px; }
@@ -835,7 +836,7 @@ input:focus-visible, select:focus-visible, textarea:focus-visible {
 .mt-3 input { width: 100%; }
 .bet-row { display: flex; gap: 10px; margin-top: 6px; }
 .bet-chk { display: inline-flex; align-items: center; gap: 6px; font-size: 0.875rem; font-weight: 600; cursor: pointer; }
-.kings-bar { font-size: 0.78125rem; color: var(--muted); margin: 8px 0 4px; line-height: 1.6; }
+.kings-bar { font-size: 0.75rem; color: var(--muted); margin: 8px 0 4px; line-height: 1.6; }
 .kings-bar b { color: var(--ink); }
 .king-badge { font-size: 0.8125rem; margin-left: 2px; letter-spacing: 1px; }
 .mt-edit { background: transparent; border: 0; color: var(--muted); cursor: pointer; padding: 2px 4px; line-height: 1; }
@@ -849,26 +850,26 @@ input:focus-visible, select:focus-visible, textarea:focus-visible {
 .login-card { text-align: center; }
 .login-head { display: flex; align-items: center; justify-content: center; gap: 9px; margin-bottom: 22px; }
 .login-head svg { width: 38px; height: 38px; }
-.login-head span { font-size: 1.3125rem; font-weight: 700; letter-spacing: .5px; font-family: var(--font-display); }
-.login-title { font-size: 1.4375rem; font-weight: 800; letter-spacing: -.4px; margin: 0 0 6px; }
+.login-head span { font-size: 1.25rem; font-weight: 700; letter-spacing: .5px; font-family: var(--font-display); }
+.login-title { font-size: 1.5rem; font-weight: 800; letter-spacing: -.4px; margin: 0 0 6px; }
 .login-sub { font-size: 0.875rem; color: var(--text-secondary, var(--muted)); margin: 0 0 18px; line-height: 1.5; min-height: 21px; }
 .login-card .fld { text-align: left; margin-top: 12px; }
 .login-card .fld label { display: block; font-size: 0.8125rem; font-weight: 700; color: var(--text-secondary, var(--muted)); margin-bottom: 6px; }
 .login-card .pin-wrap { margin-top: 2px; }
 .login-card .btn-pri { margin-top: 18px; }
 #login-btn:disabled { opacity: .45; cursor: not-allowed; }
-.login-foot { text-align: left; font-size: 0.78125rem; color: var(--text-secondary, var(--muted)); margin: 7px 2px 0; line-height: 1.5; }
+.login-foot { text-align: left; font-size: 0.75rem; color: var(--text-secondary, var(--muted)); margin: 7px 2px 0; line-height: 1.5; }
 @media (min-width: 880px) {
   #app.lvl-top { max-width: 1240px; }
   #app.lvl-top #app-main { display: block; padding: 16px 0 60px; }
   #app.lvl-top .hub-wrap { max-width: none; }
-  #app.lvl-top .sess-grid { grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 16px; }
+  #app.lvl-top .sess-grid { grid-template-columns: repeat(auto-fit, minmax(280px, 360px)); gap: 16px; }
 }
 /* 프로필: 소속 동호회 + 권한 */
 .pf-clubs { display: flex; flex-direction: column; gap: 6px; margin-bottom: 4px; }
 .pf-club-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 9px 12px; border: 1px solid var(--line); border-radius: var(--radius-md); }
 .pf-club-name { font-weight: 700; font-size: 0.875rem; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-/* 크루 안: 인터랙션 액센트는 코발트 유지. 크루 색(--acc)은 좌측 바·뱃지·아이콘 칩 등 '정체성' 요소에만 직접 적용(절제). 글로벌 토큰을 통째로 덮어쓰던 줄을 제거해 화면 전체가 단색으로 칠해지던 문제 해결. (.club-themed 클래스는 하위 선택자 훅으로 유지) */
+/* 크루 안: 인터랙션 액센트는 기본 강조색 유지. 크루 색(--acc)은 좌측 바·뱃지·아이콘 칩 등 '정체성' 요소에만 직접 적용(절제). 글로벌 토큰을 통째로 덮어쓰던 줄을 제거해 화면 전체가 단색으로 칠해지던 문제 해결. (.club-themed 클래스는 하위 선택자 훅으로 유지) */
 /* 1:1 대결 세션 */
 .match-detail { padding-top: 4px; }
 .md-vs { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 20px 8px; background: var(--surface-sunken); border-radius: var(--radius-lg); }
@@ -882,7 +883,7 @@ input:focus-visible, select:focus-visible, textarea:focus-visible {
 .md-mystat { display: flex; gap: 8px; }
 .ms-stat { flex: 1; text-align: center; }
 .ms-stat-n { font-size: 1.25rem; font-weight: 700; font-variant-numeric: tabular-nums; font-family: var(--font-mono, monospace); }
-.ms-stat-l { font-size: 0.6875rem; color: var(--text-secondary, var(--muted)); margin-top: 2px; }
+.ms-stat-l { font-size: 0.75rem; color: var(--text-secondary, var(--muted)); margin-top: 2px; }
 /* 동호회 게시판: 공지 / 투표 / 회비 */
 .board-seg { display: flex; gap: 6px; margin-bottom: 14px; }
 .bseg { flex: 1; min-height: 44px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 999px; background: var(--surface); color: var(--muted); font-weight: 700; font-size: 0.875rem; cursor: pointer; }
@@ -909,7 +910,7 @@ input:focus-visible, select:focus-visible, textarea:focus-visible {
 .dues-members { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 12px; }
 .dues-mem { display: flex; align-items: center; gap: 6px; padding: 6px 10px 6px 6px; border: 1px solid var(--line); border-radius: 999px; background: var(--surface); cursor: pointer; font: inherit; font-size: 0.8125rem; color: var(--ink); }
 .dues-mem.on { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 10%, transparent); }
-.dm-state { font-size: 0.6875rem; font-weight: 700; color: var(--muted); }
+.dm-state { font-size: 0.75rem; font-weight: 700; color: var(--muted); }
 .dues-mem.on .dm-state { color: var(--accent); }
 /* 완료된 일정 (Disabled status) */
 .sess-card.done { opacity: .6; }
@@ -948,7 +949,7 @@ input:focus-visible, select:focus-visible, textarea:focus-visible {
 .feed-item:active { transform: scale(.99); }
 .fi-head { display: flex; align-items: center; gap: 6px; margin-bottom: 8px; }
 .fi-club { font-weight: 700; font-size: 0.8125rem; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.fi-ago { font-size: 0.6875rem; color: var(--muted); flex: none; margin-left: auto; }
+.fi-ago { font-size: 0.75rem; color: var(--muted); flex: none; margin-left: auto; }
 .fi-body { display: flex; align-items: flex-start; gap: 10px; }
 .fi-ic { flex: none; color: var(--muted); margin-top: 1px; }
 .fi-main { flex: 1; min-width: 0; }
@@ -958,7 +959,7 @@ input:focus-visible, select:focus-visible, textarea:focus-visible {
 .feat-row { display: flex; gap: 16px; margin: 4px 0 0; }
 .feat-row .chk { display: inline-flex; align-items: center; gap: 6px; font-size: 0.875rem; }
 /* 피드 NEW 표시 */
-.fi-new { flex: none; font-size: 0.5625rem; font-weight: 700; letter-spacing: .3px; color: #fff; background: var(--pos); border-radius: 999px; padding: 1px 6px; margin-left: 6px; }
+.fi-new { flex: none; font-size: 0.625rem; font-weight: 700; letter-spacing: .3px; color: #fff; background: var(--pos); border-radius: 999px; padding: 1px 6px; margin-left: 6px; }
 .feed-item.is-new { border-color: color-mix(in srgb, var(--pri) 38%, var(--line)); }
 .feed-newcnt { color: var(--pos); font-weight: 800; }
 /* 동호회 아바타: 종목 라인 아이콘 칩 */
