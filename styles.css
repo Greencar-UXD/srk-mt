@@ -1,13 +1,13 @@
 /* ============================================================
    크루핏 (CREWFIT) — 스타일
-   컬러: Cobalt-Mono 디자인 시스템 (코발트 블루 액센트 + cool-gray 중립 램프)
+   컬러: Daniel's Design System (코발트 블루 액센트 + cool-gray 중립 램프)
          + 동호회별 팀컬러(--acc: red/blue/green/purple/orange)
    타이포: Pretendard 단일 (수치는 tabular-nums로 자릿수 정렬)
    레이아웃: 모바일 퍼스트 + PC 반응형(사이드바)
    ============================================================ */
 :root {
   /* ============================================================
-     Cobalt — Mono 디자인 시스템 (Greencar-UXD/design-system) 적용
+     Daniel's Design System (Greencar-UXD/design-system) 적용
      · 구조(중립 cool 램프 · 시맨틱 토큰 · 4px 스케일 · 그림자 · 타이포)는 코발트 그대로
      · 단일 액센트만 SRK 브랜드 레드로 치환 (코발트 블루 → SRK 레드)
      ============================================================ */
@@ -717,7 +717,7 @@ input:not(.pin-real):focus, select:focus, textarea:focus { box-shadow: 0 0 0 3px
 
 
 /* ============================================================
-   Cobalt — Mono 컴포넌트 정합 (구조 차용 · 액센트=SRK 레드)
+   Daniel's Design System 컴포넌트 정합 (구조 차용 · 액센트=SRK 레드)
    토큰 스왑 위에 코발트 컴포넌트 해부(elevation·radius·데이터 타이포)를 덧입힘.
    ============================================================ */
 .card { box-shadow: var(--shadow-sm); border-radius: var(--radius-xl); }
